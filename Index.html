@@ -1,0 +1,3905 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1e1b4b" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="RT05/RW04 Jrebeng Wetan" />
+  <title>Dashboard Kependudukan RT05/RW04 Jrebeng Wetan</title>
+
+  <link id="appleTouchIconLink" rel="apple-touch-icon" sizes="180x180" />
+
+  <!-- Tailwind CSS CDN untuk tata letak responsif mobile-first -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Chart.js & PapaParse CDN untuk visualisasi dan parsing CSV/TSV penuh -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <!-- Modul Firebase untuk sinkronisasi perubahan admin ke semua user -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    window.__CLOUD_SYNC_MODULE__ = {
+      initializeApp,
+      getAuth,
+      signInAnonymously,
+      signInWithCustomToken,
+      getFirestore,
+      doc,
+      setDoc,
+      onSnapshot
+    };
+  </script>
+
+  <style>
+    :root {
+      color-scheme: light;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      overflow-y: auto;
+      touch-action: pan-y pinch-zoom;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      margin: 0;
+      padding: 0;
+      padding-bottom: 5.5rem;
+      overflow-x: hidden;
+      overflow-y: auto;
+      touch-action: pan-y pinch-zoom;
+    }
+
+    .table-scroll-wrap {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: 440px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .chart-box {
+      position: relative;
+      width: 100%;
+      height: 290px;
+    }
+
+    @keyframes toastFadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .toast-enter {
+      animation: toastFadeUp 0.2s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+  <!-- Header Atas Responsif dengan Slideshow Foto, Tulisan, Link URL & Kontrol Admin -->
+  <header class="relative z-30 bg-white border-b border-slate-200 shadow-2xs">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 space-y-4">
+      <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+        <!-- Bingkai Slideshow Foto Diperbesar -->
+        <div class="relative w-full sm:w-64 md:w-72 h-44 rounded-2xl overflow-hidden border border-slate-200 bg-indigo-950 shrink-0 shadow-xs">
+          <img
+            id="headerSlideshowImage"
+            src=""
+            alt="Foto Kegiatan & Wilayah RT05/RW04 Jrebeng Wetan"
+            class="w-full h-full object-cover transition-opacity duration-300"
+          />
+          <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/85 via-slate-950/40 to-transparent p-2.5 flex items-center justify-between gap-2">
+            <span id="headerSlideCaption" class="text-[11px] font-semibold text-white truncate">
+              Lingkungan RT05 / RW04 Jrebeng Wetan
+            </span>
+            <span id="headerSlideCounter" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-white shrink-0">
+              1 / 1
+            </span>
+          </div>
+
+          <button
+            id="btnPrevSlide"
+            type="button"
+            aria-label="Foto sebelumnya"
+            class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-950/60 hover:bg-slate-950/85 text-white flex items-center justify-center text-sm font-bold cursor-pointer transition"
+          >
+            ‹
+          </button>
+          <button
+            id="btnNextSlide"
+            type="button"
+            aria-label="Foto berikutnya"
+            class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-950/60 hover:bg-slate-950/85 text-white flex items-center justify-center text-sm font-bold cursor-pointer transition"
+          >
+            ›
+          </button>
+        </div>
+
+        <!-- Informasi Tulisan, Badge & Link URL -->
+        <div class="flex-1 min-w-0 space-y-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="headerRegionBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">
+              RT05 / RW04 · Jrebeng Wetan
+            </span>
+            <span id="headerStatsBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+              0 Jiwa Terhitung · 0 KK Aktif
+            </span>
+            <span id="headerSourceBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+              Sumber: DATA KEPENDUDUKAN 2006 EXCEL (Jawaban)
+            </span>
+            <span id="headerSyncChannelBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-800 border border-sky-200">
+              Sinkron: URL (?h=...) &amp; Awan
+            </span>
+          </div>
+
+          <h1 id="headerMainTitle" class="text-lg sm:text-2xl font-extrabold tracking-tight text-slate-900">
+            Dashboard Kependudukan RT05/RW04 Jrebeng Wetan
+          </h1>
+
+          <p id="headerSubtitleText" class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            Portal data kependudukan, rentang umur, pengelompokan alamat, klasifikasi UMKM, dan formulir pendataan warga RT05/RW04 Jrebeng Wetan.
+          </p>
+
+          <div class="pt-1 flex flex-wrap items-center gap-2">
+            <a
+              id="headerUrlLink"
+              href="https://docs.google.com/forms/d/e/1FAIpQLSfGcxo5y3Ky7uCPzy4qJIHMZbAZ9zKExsDeUOlueK-fPmWeWw/viewform?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-2xs"
+            >
+              <span id="headerUrlLinkLabel">Buka Formulir Pendataan (URL)</span>
+              <span>↗</span>
+            </a>
+
+            <button
+              id="btnCopyShareHeaderLink"
+              type="button"
+              class="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold transition cursor-pointer"
+            >
+              Salin Link Bagikan
+            </button>
+
+            <button
+              id="btnSyncHeaderNow"
+              type="button"
+              class="px-3 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-200 text-xs font-bold transition cursor-pointer"
+            >
+              ↻ Tarik Header Terbaru
+            </button>
+
+            <button
+              id="btnToggleHeaderAdmin"
+              type="button"
+              class="px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold transition cursor-pointer"
+            >
+              🔒 Admin Header &amp; Slide
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Indikator Titik Slideshow -->
+      <div id="headerSlideDots" class="flex flex-wrap items-center gap-1.5"></div>
+
+      <!-- Navigasi Bagian -->
+      <nav aria-label="Navigasi Bagian Utama" class="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
+        <a href="#kpiSection" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition">
+          Ringkasan
+        </a>
+        <a href="#googleFormSyncSection" class="px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold transition">
+          Sinkron CSV &amp; Form
+        </a>
+        <a href="#ageBracketsSection" class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 text-xs font-bold transition">
+          Rentang Umur
+        </a>
+        <a href="#addressGroupSection" class="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition">
+          Per Alamat
+        </a>
+        <a href="#umkmClassificationSection" class="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-800 border border-orange-200 text-xs font-bold transition">
+          Klasifikasi UMKM
+        </a>
+        <a href="#residentMatrixSection" class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition">
+          Matrik Warga
+        </a>
+        <button id="btnOpenInstallGuide" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition cursor-pointer">
+          Pasang PWA
+        </button>
+      </nav>
+
+      <!-- Panel Admin Header & Slideshow (Diproteksi PIN) -->
+      <div id="headerAdminPanel" class="hidden bg-slate-50 border border-amber-200 rounded-2xl p-4 space-y-4">
+        <div id="headerAdminPinGate" class="max-w-md space-y-2.5">
+          <p class="text-xs font-extrabold text-amber-950">
+            Verifikasi PIN Admin untuk Mengubah Header &amp; Foto Slideshow (Default: 050426)
+          </p>
+          <form id="headerAdminPinForm" class="flex flex-col sm:flex-row gap-2">
+            <input
+              id="headerAdminPinInput"
+              type="password"
+              inputmode="numeric"
+              placeholder="Masukkan PIN Admin..."
+              class="flex-1 px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-mono tracking-widest"
+              required
+            />
+            <button type="submit" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold cursor-pointer">
+              Buka Mode Admin
+            </button>
+          </form>
+        </div>
+
+        <div id="headerAdminEditorForm" class="hidden space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2.5">
+            <span class="text-xs font-extrabold text-emerald-800">
+              Mode Admin Aktif · Tersimpan otomatis ke URL (?h=...), penyimpanan awan &amp; perangkat
+            </span>
+            <button id="btnLockHeaderAdmin" type="button" class="px-3 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold cursor-pointer">
+              Kunci Admin
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label for="adminHeaderTitleInput" class="block text-xs font-bold text-slate-700 mb-1">Judul Header</label>
+              <input id="adminHeaderTitleInput" type="text" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs" />
+            </div>
+            <div>
+              <label for="adminHeaderLinkLabelInput" class="block text-xs font-bold text-slate-700 mb-1">Teks Tombol Link URL</label>
+              <input id="adminHeaderLinkLabelInput" type="text" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs" />
+            </div>
+            <div class="md:col-span-2">
+              <label for="adminHeaderSubtitleInput" class="block text-xs font-bold text-slate-700 mb-1">Tulisan Keterangan Header</label>
+              <input id="adminHeaderSubtitleInput" type="text" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs" />
+            </div>
+            <div class="md:col-span-2">
+              <label for="adminHeaderUrlInput" class="block text-xs font-bold text-slate-700 mb-1">Link URL Tujuan</label>
+              <input id="adminHeaderUrlInput" type="url" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs" />
+            </div>
+          </div>
+
+          <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-3">
+            <p class="text-xs font-extrabold text-slate-800">Kelola Foto Slideshow Header</p>
+            <p class="text-[11px] text-slate-500">
+              Tips sinkronisasi lintas HP/laptop: gunakan URL foto HTTPS publik (<code>https://...</code>) lalu klik <strong>Simpan &amp; Terapkan Header</strong> dan bagikan link dari tombol <strong>Salin Link Bagikan</strong>.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <input id="adminNewSlideUrlInput" type="url" placeholder="URL Foto (https://...)" class="sm:col-span-2 px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs" />
+              <input id="adminNewSlideCaptionInput" type="text" placeholder="Keterangan foto (opsional)" class="px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs" />
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button id="btnAddSlideUrl" type="button" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold cursor-pointer">
+                + Tambah Foto dari URL
+              </button>
+              <label class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs font-bold cursor-pointer">
+                Unggah Foto dari Perangkat
+                <input id="adminUploadSlideFiles" type="file" accept="image/*" multiple class="hidden" />
+              </label>
+            </div>
+            <div id="adminSlidesListContainer" class="space-y-2"></div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="btnSaveHeaderAdmin" type="button" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer">
+              Simpan &amp; Terapkan Header
+            </button>
+            <button id="btnResetHeaderAdmin" type="button" class="px-3.5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold cursor-pointer">
+              Reset Default
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Kontainer Utama -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <!-- Banner PWA -->
+    <section id="pwaInstallBanner" aria-label="Status Instalasi PWA" class="bg-indigo-950 text-white rounded-2xl border border-indigo-800 p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div class="flex items-start sm:items-center gap-3 min-w-0">
+        <img id="pwaBannerIconPreview" alt="Ikon Aplikasi RT05/RW04 Jrebeng Wetan" class="w-11 h-11 rounded-xl border border-indigo-400/40 bg-indigo-900 shrink-0 object-cover" />
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-extrabold uppercase tracking-wider text-indigo-200">
+              Mode Aplikasi Web Progresif (PWA)
+            </span>
+            <span id="pwaStatusBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-800 text-indigo-100 border border-indigo-600">
+              Memeriksa status...
+            </span>
+          </div>
+          <p id="pwaStatusDescription" class="text-xs text-indigo-100/90 mt-0.5">
+            Siap dipasang ke layar utama HP Android maupun iPhone/iPad.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 shrink-0">
+        <button id="btnTriggerNativeInstall" type="button" class="hidden px-3.5 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-extrabold transition cursor-pointer shadow-sm">
+          Instal ke HP Sekarang
+        </button>
+        <button id="btnBannerInstallGuide" type="button" class="px-3.5 py-2 rounded-xl bg-indigo-800 hover:bg-indigo-700 text-white border border-indigo-600 text-xs font-bold transition cursor-pointer">
+          Panduan &amp; Status PWA
+        </button>
+      </div>
+    </section>
+
+    <!-- 1. Ringkasan KPI Otomatis -->
+    <section id="kpiSection" aria-label="Ringkasan Statistik Kependudukan" class="space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs">
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Penduduk Terhitung (Aktif)</p>
+          <p id="kpiTotalResidents" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">0</p>
+          <p id="kpiTotalResidentsSub" class="text-xs text-slate-500 mt-1">0 Laki-Laki · 0 Perempuan</p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-indigo-200 p-4 shadow-2xs">
+          <p class="text-xs font-bold uppercase tracking-wider text-indigo-700">Total KK Aktif</p>
+          <p id="kpiActiveKk" class="text-2xl sm:text-3xl font-extrabold text-indigo-900 mt-1">0</p>
+          <p id="kpiAvgFamilySize" class="text-xs text-slate-500 mt-1">Rata-rata 0,0 jiwa / KK aktif</p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-sky-200 p-4 shadow-2xs">
+          <p class="text-xs font-bold uppercase tracking-wider text-sky-700">Laki-Laki (Aktif)</p>
+          <p id="kpiMaleCount" class="text-2xl sm:text-3xl font-extrabold text-sky-900 mt-1">0</p>
+          <p id="kpiMaleShare" class="text-xs text-slate-500 mt-1">0,0% dari penduduk terhitung</p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-rose-200 p-4 shadow-2xs">
+          <p class="text-xs font-bold uppercase tracking-wider text-rose-700">Perempuan (Aktif)</p>
+          <p id="kpiFemaleCount" class="text-2xl sm:text-3xl font-extrabold text-rose-900 mt-1">0</p>
+          <p id="kpiFemaleShare" class="text-xs text-slate-500 mt-1">0,0% dari penduduk terhitung</p>
+        </div>
+      </div>
+
+      <!-- Ringkasan Jawaban YA / TIDAK & Non-Aktif -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div class="bg-white rounded-2xl border border-amber-200 p-4 shadow-2xs space-y-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-xs font-bold uppercase tracking-wider text-amber-800">Pengusaha UMKM</p>
+            <span id="kpiUmkmCount" class="text-2xl font-extrabold text-amber-800">0</span>
+          </div>
+          <p id="kpiUmkmSub" class="text-xs text-slate-600 font-medium">
+            Ya: 0 · Tidak: 0 (Total: 0)
+          </p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-purple-200 p-4 shadow-2xs space-y-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-xs font-bold uppercase tracking-wider text-purple-800">Disabilitas</p>
+            <span id="kpiDisabilityCount" class="text-2xl font-extrabold text-purple-800">0</span>
+          </div>
+          <p id="kpiDisabilitySub" class="text-xs text-slate-600 font-medium">
+            Ya: 0 · Tidak: 0 (Total: 0)
+          </p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-teal-200 p-4 shadow-2xs space-y-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-xs font-bold uppercase tracking-wider text-teal-800">Anak Yatim</p>
+            <span id="kpiOrphanCount" class="text-2xl font-extrabold text-teal-800">0</span>
+          </div>
+          <p id="kpiOrphanSub" class="text-xs text-slate-600 font-medium">
+            Ya: 0 · Tidak: 0 (Total: 0)
+          </p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-rose-300 p-4 shadow-2xs space-y-1">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-xs font-bold uppercase tracking-wider text-rose-700">Non-Aktif Dikecualikan</p>
+            <span id="kpiInactiveKkCount" class="text-xl font-extrabold text-rose-700">0 KK</span>
+          </div>
+          <p id="kpiInactiveMembersSub" class="text-xs text-rose-700 font-semibold">
+            0 warga dikecualikan (0 non-aktif · 0 KK non-aktif)
+          </p>
+          <p id="kpiInactiveKkListSub" class="text-[11px] text-slate-500 truncate">
+            Daftar KK non-aktif: tidak ada
+          </p>
+        </div>
+      </div>
+
+      <!-- Tabel Rekapitulasi Jawaban Ya / Tidak -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 sm:p-5 space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+          <div>
+            <h2 class="text-sm sm:text-base font-extrabold text-slate-900">
+              Rekapitulasi Jawaban Ya / Tidak (Warga &amp; KK Aktif)
+            </h2>
+            <p class="text-xs text-slate-500">
+              Penjumlahan otomatis jawaban <strong>Ya</strong> dan <strong>Tidak</strong> pada warga &amp; KK aktif.
+            </p>
+          </div>
+          <span id="yesNoAuditBadge" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+            Valid: Ya + Tidak = 0 Jiwa Aktif
+          </span>
+        </div>
+
+        <div class="table-scroll-wrap border border-slate-200 rounded-xl">
+          <table class="min-w-full divide-y divide-slate-200 text-xs sm:text-sm">
+            <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-600">
+              <tr>
+                <th class="px-4 py-2.5 text-left">Kategori Pertanyaan</th>
+                <th class="px-4 py-2.5 text-right text-emerald-800">Jawaban YA</th>
+                <th class="px-4 py-2.5 text-right text-slate-700">Jawaban TIDAK</th>
+                <th class="px-4 py-2.5 text-right">Total (Ya + Tidak)</th>
+                <th class="px-4 py-2.5 text-right">Persentase YA</th>
+              </tr>
+            </thead>
+            <tbody id="yesNoSummaryTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Sinkronisasi CSV / Spreadsheet & Tautan Google Form -->
+    <section id="googleFormSyncSection" aria-label="Sumber Data Spreadsheet dan Google Form" class="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 sm:p-5 space-y-4">
+      <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 border-b border-slate-100 pb-3.5">
+        <div class="space-y-1">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-violet-50 text-violet-800 border border-violet-200">
+            Database Tunggal: DATA KEPENDUDUKAN 2006 EXCEL (Jawaban) · Acuan: NAMA WARGA
+          </span>
+          <h2 class="text-base sm:text-lg font-extrabold text-slate-900">
+            PENDATAAN PENDUDUK 2026 RT05/RW04 JREBENG WETAN
+          </h2>
+          <p class="text-xs text-slate-500">
+            Sinkronisasikan data CSV/TSV penuh dari URL Google Sheets/CSV, unggah file CSV/TSV, atau tempel baris spreadsheet langsung.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
+          <a id="externalOfficialFormLink" href="https://docs.google.com/forms/d/e/1FAIpQLSfGcxo5y3Ky7uCPzy4qJIHMZbAZ9zKExsDeUOlueK-fPmWeWw/viewform?usp=sharing" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs sm:text-sm font-bold transition">
+            Buka Google Form Resmi →
+          </a>
+          <button id="btnCopyFormUrl" type="button" class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs sm:text-sm font-bold transition cursor-pointer">
+            Salin Link Form
+          </button>
+        </div>
+      </div>
+
+      <!-- Pengaturan Link Google Form -->
+      <div class="bg-violet-50/50 border border-violet-200 rounded-xl p-3.5 space-y-2">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+          <label for="customGoogleFormUrlInput" class="block text-xs font-bold text-violet-950">
+            Tautan Google Form Responden (Tersimpan di localStorage)
+          </label>
+          <span id="activeFormLinkPreview" class="text-[11px] font-mono text-violet-800 truncate max-w-md"></span>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input id="customGoogleFormUrlInput" type="url" class="flex-1 px-3 py-2 rounded-xl border border-violet-300 bg-white text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500" />
+          <button id="btnSaveFormUrl" type="button" class="px-3.5 py-2 rounded-xl bg-violet-700 hover:bg-violet-800 text-white text-xs font-bold transition cursor-pointer shrink-0">
+            Simpan Link Form
+          </button>
+          <button id="btnResetFormUrl" type="button" class="px-3.5 py-2 rounded-xl bg-white hover:bg-violet-100 text-violet-900 border border-violet-300 text-xs font-bold transition cursor-pointer shrink-0">
+            Reset Link Default
+          </button>
+        </div>
+      </div>
+
+      <!-- Panel Sinkronisasi CSV -->
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3.5">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <p class="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+              Sinkronisasi Spreadsheet Penuh (CSV / TSV / URL / Tempel Baris Tanpa Terpotong)
+            </p>
+            <p id="syncStatusLabel" class="text-xs text-slate-500 mt-0.5">
+              Sumber tunggal: DATA KEPENDUDUKAN 2006 EXCEL (Jawaban).
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="btnSyncCsvUrl" type="button" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition cursor-pointer">
+              Sinkron URL CSV
+            </button>
+            <button id="btnRestoreSnapshot" type="button" class="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-bold transition cursor-pointer">
+              Muat Snapshot Acuan
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label for="spreadsheetCsvUrl" class="block text-xs font-bold text-slate-700">
+              URL Publikasi CSV Spreadsheet (DATA KEPENDUDUKAN 2006 EXCEL)
+            </label>
+            <input id="spreadsheetCsvUrl" type="url" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=..." class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+
+          <div class="space-y-1">
+            <label for="spreadsheetCsvFile" class="block text-xs font-bold text-slate-700">
+              Unggah File CSV / TSV Spreadsheet (Seluruh Baris)
+            </label>
+            <input id="spreadsheetCsvFile" type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" class="block w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 border border-slate-300 rounded-xl bg-white cursor-pointer" />
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <label for="spreadsheetPasteArea" class="block text-xs font-bold text-slate-700">
+              Tempel Baris CSV / TSV / Salinan Spreadsheet Penuh
+            </label>
+            <button id="btnApplyPastedCsv" type="button" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition cursor-pointer">
+              Terapkan Seluruh Baris
+            </button>
+          </div>
+          <textarea id="spreadsheetPasteArea" rows="3" placeholder="Tempel seluruh baris CSV/TSV dari spreadsheet DATA KEPENDUDUKAN 2006 EXCEL (Jawaban)..." class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Rentang Umur Dinamis & Chart.js -->
+    <section id="ageBracketsSection" aria-label="Matrik dan Grafik Rentang Umur" class="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 sm:p-5 space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-3.5">
+        <div>
+          <h2 class="text-base sm:text-lg font-extrabold text-slate-900">
+            Rentang Umur per Jenis Kelamin (Warga Aktif &amp; KK Aktif)
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Dihitung otomatis beracuan NAMA WARGA unik berstatus Aktif pada NO KK aktif.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btnAddAgeRange" type="button" class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 text-xs font-bold transition cursor-pointer">
+            + Tambah Rentang
+          </button>
+          <button id="btnSaveAgeRanges" type="button" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition cursor-pointer">
+            Simpan Rentang
+          </button>
+          <button id="btnResetAgeRanges" type="button" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer">
+            Reset Default
+          </button>
+        </div>
+      </div>
+
+      <div id="ageRangeEditorList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5"></div>
+
+      <div class="table-scroll-wrap border border-slate-200 rounded-xl">
+        <table class="min-w-full divide-y divide-slate-200 text-sm">
+          <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-600">
+            <tr>
+              <th class="px-4 py-3 text-left">Rentang Umur</th>
+              <th class="px-4 py-3 text-right">Laki-Laki</th>
+              <th class="px-4 py-3 text-right">Perempuan</th>
+              <th class="px-4 py-3 text-right">Total</th>
+              <th class="px-4 py-3 text-right">Persentase</th>
+            </tr>
+          </thead>
+          <tbody id="ageMatrixTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
+          <tfoot id="ageMatrixTableFoot" class="bg-slate-50 font-bold text-slate-900 border-t-2 border-slate-200"></tfoot>
+        </table>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+          <h3 class="text-sm font-bold text-slate-800 mb-3">Grafik Batang Rentang Umur (L / P · Aktif)</h3>
+          <div class="chart-box">
+            <canvas id="ageBarChartCanvas"></canvas>
+          </div>
+        </div>
+        <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+          <h3 class="text-sm font-bold text-slate-800 mb-3">Proporsi Kelompok Umur (Aktif)</h3>
+          <div class="chart-box">
+            <canvas id="ageShareChartCanvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3B. Pengelompokan Berdasarkan Alamat -->
+    <section id="addressGroupSection" aria-label="Pengelompokan Berdasarkan Alamat" class="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 sm:p-5 space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3.5">
+        <div>
+          <h2 class="text-base sm:text-lg font-extrabold text-slate-900">
+            Pengelompokan Berdasarkan Alamat (Warga &amp; KK Aktif)
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Kelompok kata kunci <strong>Perumnas</strong>, <strong>Leci</strong>, <strong>Pepaya</strong>, <strong>Hesni</strong>, <strong>Jalan Mastrip</strong>, dan <strong>Lainnya</strong>.
+          </p>
+        </div>
+        <span id="addressGroupCountBadge" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 shrink-0">
+          0 Kelompok Alamat
+        </span>
+      </div>
+
+      <div class="table-scroll-wrap border border-slate-200 rounded-xl">
+        <table class="min-w-full divide-y divide-slate-200 text-xs sm:text-sm">
+          <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-600">
+            <tr>
+              <th class="px-4 py-3 text-left">No</th>
+              <th class="px-4 py-3 text-left">Alamat / Wilayah</th>
+              <th class="px-4 py-3 text-right text-indigo-800">Jumlah KK</th>
+              <th class="px-4 py-3 text-right text-sky-800">Laki-Laki</th>
+              <th class="px-4 py-3 text-right text-rose-800">Perempuan</th>
+              <th class="px-4 py-3 text-right">Total Jiwa</th>
+              <th class="px-4 py-3 text-right">Persentase</th>
+              <th class="px-4 py-3 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="addressGroupTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
+          <tfoot id="addressGroupTableFoot" class="bg-slate-50 font-bold text-slate-900 border-t-2 border-slate-200"></tfoot>
+        </table>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+          <h3 class="text-sm font-bold text-slate-800 mb-3">Grafik Batang KK, Laki-Laki &amp; Perempuan per Alamat</h3>
+          <div class="chart-box">
+            <canvas id="addressBarChartCanvas"></canvas>
+          </div>
+        </div>
+        <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+          <h3 class="text-sm font-bold text-slate-800 mb-3">Proporsi Jumlah Jiwa per Kelompok Alamat (Aktif)</h3>
+          <div class="chart-box">
+            <canvas id="addressShareChartCanvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rincian Warga per Alamat (PIN) -->
+      <div id="addressDetailPanel" class="border border-amber-200 bg-amber-50/35 rounded-xl p-4 space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div class="space-y-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 id="addressDetailTitle" class="text-sm font-extrabold text-slate-900">
+                Rincian Warga per Alamat (Warga &amp; KK Aktif)
+              </h3>
+              <span id="addressDetailLockBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                Terkunci PIN
+              </span>
+            </div>
+            <p id="addressDetailSubtitle" class="text-xs text-slate-600">
+              Menampilkan Nama Warga, NO KK, NIK, dan Tanggal Lahir berdasarkan kelompok alamat.
+            </p>
+          </div>
+          <div id="addressDetailUnlockedControls" class="hidden flex-wrap items-center gap-2">
+            <label for="addressDetailGroupSelect" class="text-xs font-bold text-slate-700">Kelompok:</label>
+            <select id="addressDetailGroupSelect" class="px-3 py-1.5 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800">
+              <option value="ALL">Semua Kelompok Alamat Aktif</option>
+            </select>
+            <button id="btnLockAddressDetailPin" type="button" class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer">
+              Kunci Rincian
+            </button>
+          </div>
+        </div>
+
+        <div id="addressDetailPinLockCard" class="bg-white border border-amber-200 rounded-xl p-4 sm:p-5 max-w-lg mx-auto space-y-3">
+          <p class="text-xs text-slate-600 text-center">
+            Masukkan PIN untuk melihat daftar <strong>Nama Warga</strong>, <strong>NO KK</strong>, <strong>NIK</strong>, dan <strong>Tanggal Lahir</strong> per kelompok alamat.
+          </p>
+          <form id="addressDetailPinUnlockForm" class="flex flex-col sm:flex-row gap-2">
+            <input id="addressDetailPinInput" type="password" inputmode="numeric" autocomplete="off" placeholder="Masukkan kode PIN..." class="flex-1 px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-mono tracking-widest text-slate-900" required />
+            <button id="btnUnlockAddressDetailPin" type="submit" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-bold transition cursor-pointer shrink-0">
+              Buka Rincian
+            </button>
+          </form>
+          <p id="addressDetailPinErrorText" class="hidden text-xs font-semibold text-rose-700 text-center">
+            PIN salah. Silakan periksa kembali kode PIN Anda.
+          </p>
+        </div>
+
+        <div id="addressDetailProtectedContent" class="hidden table-scroll-wrap border border-slate-200 rounded-xl bg-white">
+          <table class="min-w-full divide-y divide-slate-200 text-xs sm:text-sm">
+            <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-600">
+              <tr>
+                <th class="px-3 py-2.5 text-left">No</th>
+                <th class="px-3 py-2.5 text-left">Nama Warga</th>
+                <th class="px-3 py-2.5 text-left">NO KK</th>
+                <th class="px-3 py-2.5 text-left">NIK</th>
+                <th class="px-3 py-2.5 text-left">Tanggal Lahir</th>
+                <th class="px-3 py-2.5 text-left">Kelompok Alamat</th>
+              </tr>
+            </thead>
+            <tbody id="addressDetailTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3C. Klasifikasi UMKM -->
+    <section id="umkmClassificationSection" aria-label="Klasifikasi UMKM" class="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 sm:p-5 space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-3.5">
+        <div class="space-y-1">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-50 text-orange-800 border border-orange-200">
+            Klasifikasi UMKM · Jawaban "YA" Pengusaha UMKM (Warga &amp; KK Aktif)
+          </span>
+          <h2 class="text-base sm:text-lg font-extrabold text-slate-900">
+            Klasifikasi UMKM — Nama, NIK, NO KK, Perijinan &amp; Nama Produk
+          </h2>
+        </div>
+        <span id="umkmClassificationCountBadge" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-900 border border-orange-200 shrink-0">
+          0 Pengusaha UMKM (YA)
+        </span>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3">
+        <input id="searchUmkmInput" type="search" placeholder="Cari Nama Warga, NIK, NO KK, Perijinan, atau Nama Produk..." class="flex-1 px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm text-slate-800" />
+        <select id="filterUmkmPermitSelect" class="w-full sm:w-48 px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm text-slate-800">
+          <option value="ALL">Semua Status Perijinan</option>
+          <option value="BERIJIN">Berijin / NIB / PIRT</option>
+          <option value="BELUM">Belum Berijin / Proses</option>
+        </select>
+      </div>
+
+      <div class="table-scroll-wrap border border-slate-200 rounded-xl">
+        <table class="min-w-full divide-y divide-slate-200 text-xs sm:text-sm">
+          <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-600">
+            <tr>
+              <th class="px-3 py-3 text-left">No</th>
+              <th class="px-3 py-3 text-left">Nama</th>
+              <th class="px-3 py-3 text-left">NIK</th>
+              <th class="px-3 py-3 text-left">NO KK</th>
+              <th class="px-3 py-3 text-left">Perijinan</th>
+              <th class="px-3 py-3 text-left">Nama Produk</th>
+              <th class="px-3 py-3 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="umkmClassificationTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4. Matrik Warga (Diproteksi PIN) -->
+    <section id="residentMatrixSection" aria-label="Matrik Warga" class="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 sm:p-5 space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-3.5">
+        <div class="space-y-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-base sm:text-lg font-extrabold text-slate-900">Matrik Warga</h2>
+            <span id="matrixLockStatusBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+              Terkunci PIN
+            </span>
+          </div>
+          <p class="text-xs text-slate-500">
+            Dilindungi PIN khusus pengurus/petugas berwenang.
+          </p>
+        </div>
+
+        <div id="matrixUnlockedHeaderActions" class="hidden flex-wrap items-center gap-2">
+          <button id="btnActivateAllVisibleResidents" type="button" class="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 text-xs font-bold transition cursor-pointer">
+            Aktifkan Warga Tersaring
+          </button>
+          <button id="btnExportCsv" type="button" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition cursor-pointer">
+            Ekspor CSV
+          </button>
+          <button id="btnResetFilters" type="button" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer">
+            Reset Filter
+          </button>
+          <button id="btnLockMatrixPin" type="button" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer">
+            Kunci Matrik
+          </button>
+        </div>
+      </div>
+
+      <div id="residentMatrixPinLockCard" class="bg-slate-50 border border-slate-200 rounded-2xl p-5 sm:p-6 max-w-xl mx-auto my-2 space-y-4">
+        <div class="space-y-1 text-center">
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-indigo-100 text-indigo-900 border border-indigo-200">
+            Akses Terbatas · PIN Matrik Warga
+          </span>
+          <h3 class="text-base sm:text-lg font-extrabold text-slate-900 pt-1">
+            Masukkan PIN Login untuk Membuka Matrik Warga
+          </h3>
+          <p class="text-xs text-slate-600">
+            PIN awal: <code class="font-mono font-bold text-slate-800">050426</code>
+          </p>
+        </div>
+
+        <form id="matrixPinUnlockForm" class="space-y-3">
+          <div>
+            <label for="matrixPinInput" class="block text-xs font-bold text-slate-700 mb-1">Kode PIN Matrik Warga</label>
+            <input id="matrixPinInput" type="password" inputmode="numeric" autocomplete="off" placeholder="Masukkan kode PIN..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-mono tracking-widest text-slate-900" required />
+            <p id="matrixPinErrorText" class="hidden text-xs font-semibold text-rose-700 mt-1">
+              PIN salah. Silakan periksa kembali kode PIN Anda.
+            </p>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-2">
+            <button id="btnUnlockMatrixPin" type="submit" class="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition cursor-pointer">
+              Buka Matrik Warga
+            </button>
+            <button id="btnToggleChangePinPanel" type="button" class="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold transition cursor-pointer">
+              Ganti PIN
+            </button>
+          </div>
+        </form>
+
+        <div id="changePinPanel" class="hidden border-t border-slate-200 pt-3.5 space-y-2.5">
+          <p class="text-xs font-bold text-slate-800">Ubah Kode PIN Matrik Warga</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <input id="currentPinForChangeInput" type="password" inputmode="numeric" placeholder="PIN saat ini" class="px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-mono" />
+            <input id="newPinInput" type="password" inputmode="numeric" placeholder="PIN baru (min. 4 digit)" class="px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-mono" />
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="btnSaveNewMatrixPin" type="button" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer">
+              Simpan PIN Baru
+            </button>
+            <button id="btnResetDefaultMatrixPin" type="button" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer">
+              Reset PIN ke Default (050426)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="residentMatrixProtectedContent" class="hidden space-y-4">
+        <div id="residentStatusQuickBar" class="flex flex-wrap items-center justify-between gap-2 bg-indigo-50/50 border border-indigo-100 rounded-xl px-3.5 py-2.5 text-xs">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="font-bold text-slate-700">Ringkasan Nama Warga:</span>
+            <span id="quickBadgeActiveResidents" class="inline-flex items-center px-2.5 py-0.5 rounded-full font-bold bg-indigo-100 text-indigo-900 border border-indigo-200">
+              0 Warga Aktif
+            </span>
+            <span id="quickBadgeInactiveResidents" class="inline-flex items-center px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-900 border border-amber-200">
+              0 Warga Non-Aktif
+            </span>
+            <span id="quickBadgeCountedResidents" class="inline-flex items-center px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
+              0 Terhitung (Warga &amp; KK Aktif)
+            </span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+          <div class="lg:col-span-2">
+            <label for="searchResidentInput" class="block text-xs font-bold text-slate-700 mb-1">Cari Nama / NIK / NO KK / Alamat</label>
+            <input id="searchResidentInput" type="search" placeholder="Ketik kata kunci..." class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm" />
+          </div>
+
+          <div>
+            <label for="filterAddressSelect" class="block text-xs font-bold text-slate-700 mb-1">Alamat</label>
+            <select id="filterAddressSelect" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm">
+              <option value="ALL">Semua Alamat</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="filterResidentStatusSelect" class="block text-xs font-bold text-slate-700 mb-1">Status Warga</label>
+            <select id="filterResidentStatusSelect" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm">
+              <option value="ALL">Semua Status Warga</option>
+              <option value="AKTIF">Warga Aktif</option>
+              <option value="NONAKTIF">Warga Non-Aktif</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="filterGenderSelect" class="block text-xs font-bold text-slate-700 mb-1">Jenis Kelamin</label>
+            <select id="filterGenderSelect" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm">
+              <option value="ALL">Semua Jenis Kelamin</option>
+              <option value="LAKI-LAKI">Laki-Laki</option>
+              <option value="PEREMPUAN">Perempuan</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="filterKkStatusSelect" class="block text-xs font-bold text-slate-700 mb-1">Status NO KK</label>
+            <select id="filterKkStatusSelect" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm">
+              <option value="ALL">Semua Status KK</option>
+              <option value="AKTIF">KK Aktif</option>
+              <option value="NONAKTIF">KK Non-Aktif</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="filterAgeBracketSelect" class="block text-xs font-bold text-slate-700 mb-1">Rentang Umur</label>
+            <select id="filterAgeBracketSelect" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm">
+              <option value="ALL">Semua Rentang Umur</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-600">
+          <p id="matrixSummaryText">Menampilkan 0 data warga.</p>
+          <div class="flex items-center gap-2">
+            <label for="pageSizeSelect" class="font-semibold">Baris / halaman:</label>
+            <select id="pageSizeSelect" class="px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-semibold">
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="250">250</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-scroll-wrap border border-slate-200 rounded-xl">
+          <table class="min-w-full divide-y divide-slate-200 text-xs sm:text-sm">
+            <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-600">
+              <tr>
+                <th class="px-3 py-3 text-left">No</th>
+                <th class="px-3 py-3 text-left">NO KK</th>
+                <th class="px-3 py-3 text-left">Status KK</th>
+                <th class="px-3 py-3 text-left">NIK</th>
+                <th class="px-3 py-3 text-left">Nama Warga</th>
+                <th class="px-3 py-3 text-left">Status Warga</th>
+                <th class="px-3 py-3 text-left">JK</th>
+                <th class="px-3 py-3 text-right">Umur</th>
+                <th class="px-3 py-3 text-center">UMKM</th>
+                <th class="px-3 py-3 text-center">Disabilitas</th>
+                <th class="px-3 py-3 text-center">Anak Yatim</th>
+                <th class="px-3 py-3 text-left">Alamat</th>
+                <th class="px-3 py-3 text-right">Aksi Warga &amp; KK</th>
+              </tr>
+            </thead>
+            <tbody id="residentsMatrixBody" class="divide-y divide-slate-100 bg-white"></tbody>
+          </table>
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
+          <p id="paginationInfoLabel" class="text-xs text-slate-500">Halaman 1 dari 1</p>
+          <div class="flex items-center gap-2">
+            <button id="btnPrevPage" type="button" class="px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 disabled:opacity-40 cursor-pointer">
+              ← Sebelumnya
+            </button>
+            <button id="btnNextPage" type="button" class="px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 disabled:opacity-40 cursor-pointer">
+              Berikutnya →
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-white border-t border-slate-200 py-4 px-4 text-center text-xs text-slate-500">
+    Dashboard Kependudukan RT05/RW04 Jrebeng Wetan · Sumber Tunggal: DATA KEPENDUDUKAN 2006 EXCEL (Jawaban) · Acuan: NAMA WARGA.
+  </footer>
+
+  <!-- Bottom Navigation Bar -->
+  <nav aria-label="Navigasi Bawah" class="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-slate-200">
+    <div class="max-w-3xl mx-auto px-2 py-1.5 grid grid-cols-4 gap-1 text-center">
+      <a href="#kpiSection" class="py-1.5 px-1 rounded-xl hover:bg-slate-100 text-[11px] font-bold text-slate-700">Ringkasan</a>
+      <a href="#googleFormSyncSection" class="py-1.5 px-1 rounded-xl hover:bg-violet-50 text-[11px] font-bold text-violet-700">Sinkron CSV</a>
+      <a href="#ageBracketsSection" class="py-1.5 px-1 rounded-xl hover:bg-indigo-50 text-[11px] font-bold text-indigo-700">Rentang Umur</a>
+      <a href="#residentMatrixSection" class="py-1.5 px-1 rounded-xl hover:bg-emerald-50 text-[11px] font-bold text-emerald-700">Matrik Warga</a>
+    </div>
+  </nav>
+
+  <!-- Modal Panduan PWA -->
+  <div id="installGuideModal" class="fixed inset-0 z-50 hidden bg-slate-950/50 backdrop-blur-2xs items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="installGuideTitle">
+    <div class="bg-white rounded-2xl border border-slate-200 max-w-lg w-full p-5 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <img id="pwaModalIconPreview" alt="Ikon PWA" class="w-9 h-9 rounded-lg border border-slate-200 bg-indigo-950 object-cover" />
+          <h3 id="installGuideTitle" class="text-base font-extrabold text-slate-900">Pasang PWA &amp; Status Aplikasi</h3>
+        </div>
+        <button id="btnCloseInstallGuide" type="button" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 cursor-pointer">
+          Tutup
+        </button>
+      </div>
+
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-1.5 text-xs">
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-bold text-slate-700">Status Tampilan Saat Ini:</span>
+          <span id="modalPwaModeValue" class="font-extrabold text-indigo-800">Memeriksa...</span>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-bold text-slate-700">Protokol &amp; Service Worker:</span>
+          <span id="modalSwStatusValue" class="font-semibold text-slate-800">Memeriksa...</span>
+        </div>
+        <p id="modalPwaContextNote" class="text-slate-600 pt-1 leading-relaxed"></p>
+      </div>
+
+      <div id="modalNativeInstallWrap" class="hidden bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div class="text-xs text-emerald-950">
+          <p class="font-extrabold">Prompt Instalasi Browser Tersedia</p>
+          <p class="text-emerald-800 mt-0.5">Ketuk tombol di samping untuk memunculkan dialog instalasi aplikasi.</p>
+        </div>
+        <button id="btnModalNativeInstall" type="button" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold transition cursor-pointer shrink-0">
+          Instal Sekarang
+        </button>
+      </div>
+
+      <div class="text-xs sm:text-sm text-slate-600 space-y-2">
+        <p><strong>Android (Chrome):</strong> Pilih menu titik tiga (⋮) lalu <strong>Tambahkan ke layar utama</strong> atau <strong>Instal aplikasi</strong>.</p>
+        <p><strong>iPhone / iPad (Safari):</strong> Ketuk <strong>Bagikan</strong> lalu pilih <strong>Tambah ke Layar Utama</strong>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wadah Toast Notifikasi -->
+  <div id="toastContainer" class="fixed bottom-16 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <script>
+    const DEFAULT_GOOGLE_FORM_URL =
+      'https://docs.google.com/forms/d/e/1FAIpQLSfGcxo5y3Ky7uCPzy4qJIHMZbAZ9zKExsDeUOlueK-fPmWeWw/viewform?usp=sharing';
+
+    const DEFAULT_SPREADSHEET_CSV_URL =
+      'https://docs.google.com/spreadsheets/d/1dxN0iXW5fOsNXBuBuTXaYhNqmm5sJRH5UnAMUYgjjeY/export?format=csv&gid=416751002';
+
+    const DEFAULT_MATRIX_PIN = '050426';
+
+    // Kunci ruang publik cadangan lintas perangkat/user apabila Firestore tidak terkonfigurasi
+    const PUBLIC_SYNC_NAMESPACE = 'rt05_rw04_jrebeng_wetan_header_v1';
+    const PUBLIC_KV_ENDPOINT = 'https://kvdb.io/api/v1';
+
+    const DEFAULT_HEADER_BRANDING = {
+      title: 'Dashboard Kependudukan RT05/RW04 Jrebeng Wetan',
+      subtitle: 'Portal data kependudukan, rentang umur, pengelompokan alamat, klasifikasi UMKM, dan formulir pendataan warga RT05/RW04 Jrebeng Wetan.',
+      linkLabel: 'Buka Formulir Pendataan (URL)',
+      linkUrl: DEFAULT_GOOGLE_FORM_URL,
+      slides: [
+        {
+          url: 'https://placehold.co/640x360/1e1b4b/e0e7ff?text=RT05+%2F+RW04+Jrebeng+Wetan',
+          caption: 'Wilayah RT05 / RW04 Jrebeng Wetan'
+        },
+        {
+          url: 'https://placehold.co/640x360/0f766e/ecfdf5?text=Pendataan+Warga+%26+UMKM+2026',
+          caption: 'Pendataan Penduduk & Klasifikasi UMKM 2026'
+        },
+        {
+          url: 'https://placehold.co/640x360/312e81/f8fafc?text=Pelayanan+Administrasi+Warga',
+          caption: 'Pelayanan & Data Kependudukan Aktif'
+        }
+      ]
+    };
+
+    const DEFAULT_AGE_RANGES = [
+      { label: '0-5', min: 0, max: 5 },
+      { label: '6-12', min: 6, max: 12 },
+      { label: '13-17', min: 13, max: 17 },
+      { label: '18-25', min: 18, max: 25 },
+      { label: '26-45', min: 26, max: 45 },
+      { label: '46-60', min: 46, max: 60 },
+      { label: '60+', min: 61, max: 200 }
+    ];
+
+    const REFERENCE_SPREADSHEET_SNAPSHOT = [
+      { no_kk: '12346789007', kkActive: true, residentActive: true, nik: '123456789909000', nama: 'YULIS', jk: 'LAKI-LAKI', tanggal_lahir: '15/07/1978', umur: '48 TAHUN,4 BULAN,19 HARI,', alamat: 'RT 05 RW 04 Jrebeng Wetan', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574051209180005', kkActive: true, residentActive: true, nik: '3513223107870002', nama: 'RIKHO TRI YULIADMOKO', jk: 'LAKI-LAKI', tanggal_lahir: '31/07/1987', umur: '39 TAHUN,3 BULAN,14 HARI,', alamat: 'RT 05 RW 04 Jrebeng Wetan', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574051209180005', kkActive: true, residentActive: true, nik: '3513224503880001', nama: 'VEGA BATHARI R. TYAS', jk: 'PEREMPUAN', tanggal_lahir: '05/03/1988', umur: '38 TAHUN,8 BULAN,12 HARI,', alamat: 'RT 05 RW 04 Jrebeng Wetan', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574051209180005', kkActive: true, residentActive: true, nik: '3513224702130001', nama: 'VANYA AZZAHRA PUTRIADMOKO', jk: 'PEREMPUAN', tanggal_lahir: '07/02/2013', umur: '13 TAHUN,9 BULAN,17 HARI,', alamat: 'RT 05 RW 04 Jrebeng Wetan', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574051403230007', kkActive: true, residentActive: true, nik: '3513194204930001', nama: 'Titianna Zakiah Ambarwati', jk: 'PEREMPUAN', tanggal_lahir: '02/04/1993', umur: '33 TAHUN,7 BULAN,16 HARI,', alamat: 'RT 05 RW 04 Jrebeng Wetan', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574051209180005', kkActive: true, residentActive: true, nik: '3513224305160001', nama: 'REISHA INARA PUTRIADMOKO', jk: 'PEREMPUAN', tanggal_lahir: '03/05/2016', umur: '10 TAHUN,6 BULAN,24 HARI,', alamat: 'RT 05 RW 04 Jrebeng Wetan', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3508040808220002', kkActive: true, residentActive: true, nik: '350804260100001', nama: 'RIENDI PRATAMA', jk: 'LAKI-LAKI', tanggal_lahir: '26/01/1990', umur: '36 TAHUN,9 BULAN,9 HARI,', alamat: 'RT 05 RW 04 Jrebeng Wetan', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574053006100006', kkActive: true, residentActive: true, nik: '3574051012540002', nama: 'Budi hari santoso', jk: 'LAKI-LAKI', tanggal_lahir: '10/12/1954', umur: '71 TAHUN,11 BULAN,12 HARI,', alamat: 'RT 05 RW 04 Jrebeng Wetan', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574053006100006', kkActive: true, residentActive: true, nik: '3574054712660001', nama: 'Anny indarwati', jk: 'PEREMPUAN', tanggal_lahir: '07/12/1966', umur: '59 TAHUN,11 BULAN,16 HARI,', alamat: 'RT 05 RW 04 Jrebeng Wetan', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574051304120002', kkActive: true, residentActive: true, nik: '3574054311860001', nama: 'NOVITA HERMA PURNAMASARI', jk: 'PEREMPUAN', tanggal_lahir: '03/11/1986', umur: '40 TAHUN,0 BULAN,10 HARI,', alamat: 'RT 05 RW 04 Jrebeng Wetan', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574051304120002', kkActive: true, residentActive: true, nik: '3574050908820002', nama: 'ERDIANTO SETYO ADI', jk: 'LAKI-LAKI', tanggal_lahir: '09/08/1982', umur: '44 TAHUN,3 BULAN,25 HARI,', alamat: 'RT 05 RW 04 Jrebeng Wetan', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574051304120002', kkActive: true, residentActive: true, nik: '3574056505080002', nama: 'CLEARESTA NARA FAUZIYYAH', jk: 'PEREMPUAN', tanggal_lahir: '25/05/2008', umur: '18 TAHUN,5 BULAN,20 HARI,', alamat: 'RT 05 RW 04 Jrebeng Wetan', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574051011100131', kkActive: true, residentActive: true, nik: '3574054304550001', nama: 'ENDANG RAHAYU', jk: 'PEREMPUAN', tanggal_lahir: '03/04/1955', umur: '71 TAHUN,7 BULAN,7 HARI,', alamat: 'RT 05 RW 04 Jrebeng Wetan', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574051304120002', kkActive: true, residentActive: true, nik: '3574051202140002', nama: 'AZKA NABHAN CHALIEF', jk: 'LAKI-LAKI', tanggal_lahir: '12/02/2014', umur: '12 TAHUN,9 BULAN,27 HARI,', alamat: 'RT 05 RW 04 Jrebeng Wetan', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3513121404210005', kkActive: true, residentActive: true, nik: '3513126308710002', nama: 'Nurul Qomariyah', jk: 'PEREMPUAN', tanggal_lahir: '23/08/1971', umur: 55, alamat: 'RT 05 RW 04 Jrebeng Wetan', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574041201010002', kkActive: true, residentActive: true, nik: '3574041403790004', nama: 'Indra Ardianta', jk: 'LAKI-LAKI', umur: 47, alamat: 'Gg. Melati RT 05 RW 04', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574041201010003', kkActive: true, residentActive: true, nik: '3574042207730005', nama: 'Tri Sujarwanto', jk: 'LAKI-LAKI', umur: 53, alamat: 'Jl. Jrebeng Wetan RT 05 RW 04', umkm: 'YA', perijinan: 'NIB', nama_umkm: 'Kopi Jrebeng', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574041201010003', kkActive: true, residentActive: true, nik: '3574040905050006', nama: 'Muhammad Thoriq', jk: 'LAKI-LAKI', umur: 21, alamat: 'Jl. Jrebeng Wetan RT 05 RW 04', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574041201010004', kkActive: true, residentActive: true, nik: '3574041802680007', nama: 'BUDIONO', jk: 'LAKI-LAKI', umur: 58, alamat: 'Gg. Kenanga RT 05 RW 04', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'YA', anak_yatim: 'TIDAK' },
+      { no_kk: '3574041201010004', kkActive: true, residentActive: true, nik: '3574045504720008', nama: 'Helmiatun Hasanah', jk: 'PEREMPUAN', umur: 54, alamat: 'Gg. Kenanga RT 05 RW 04', umkm: 'YA', perijinan: 'Belum Berijin', nama_umkm: 'Kue Basah Bu Helmi', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574041201010004', kkActive: true, residentActive: true, nik: '3574041010960009', nama: 'LUKMAN HAKIM ADITYA FIRMANSYAH', jk: 'LAKI-LAKI', umur: 30, alamat: 'Gg. Kenanga RT 05 RW 04', umkm: 'YA', perijinan: 'NIB / PIRT', nama_umkm: 'Keripik Tempe Lukman', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574041201010004', kkActive: true, residentActive: true, nik: '3574044712010010', nama: 'Dhea Putri Shalsya Nabila', jk: 'PEREMPUAN', umur: 24, alamat: 'Gg. Kenanga RT 05 RW 04', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574041201010005', kkActive: true, residentActive: true, nik: '3574044507850011', nama: 'Hilmiyati', jk: 'PEREMPUAN', umur: 41, alamat: 'Jl. Jrebeng Wetan RT 05 RW 04', umkm: 'YA', perijinan: 'NIB', nama_umkm: 'Risol & Sambal Hilmi', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574041201010005', kkActive: true, residentActive: true, nik: '3574045211080012', nama: "Nanda Dewi Rohma Nur'Aini", jk: 'PEREMPUAN', umur: 18, alamat: 'Jl. Jrebeng Wetan RT 05 RW 04', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' },
+      { no_kk: '3574041201010006', kkActive: true, residentActive: true, nik: '3574041103640013', nama: 'Drs. TRI JOKO DHUTO', jk: 'LAKI-LAKI', tanggal_lahir: '11/03/1964', umur: 62, alamat: 'Gg. Mawar RT 05 RW 04', umkm: 'TIDAK', perijinan: '', nama_umkm: '', disabilitas: 'TIDAK', anak_yatim: 'TIDAK' }
+    ];
+
+    const STORAGE_KEYS = {
+      residents: 'rt05_rw04_jrebeng_wetan_residents_v12',
+      kkStatusMap: 'rt05_rw04_jrebeng_wetan_kk_status_v12',
+      residentStatusMap: 'rt05_rw04_jrebeng_wetan_resident_status_v12',
+      umkmMetaMap: 'rt05_rw04_jrebeng_wetan_umkm_meta_v12',
+      ranges: 'rt05_rw04_jrebeng_wetan_ranges_v12',
+      csvUrl: 'rt05_rw04_jrebeng_wetan_csv_url_v12',
+      formUrl: 'rt05_rw04_jrebeng_wetan_form_url_v12',
+      sourceLabel: 'rt05_rw04_jrebeng_wetan_source_v12',
+      matrixPin: 'rt05_rw04_jrebeng_wetan_matrix_pin_v12',
+      headerBranding: 'rt05_rw04_jrebeng_wetan_header_branding_v12'
+    };
+
+    let state = {
+      residents: [],
+      kkStatusMap: {},
+      residentStatusMap: {},
+      umkmMetaMap: {},
+      ageRanges: [],
+      csvUrl: DEFAULT_SPREADSHEET_CSV_URL,
+      formUrl: DEFAULT_GOOGLE_FORM_URL,
+      headerBranding: {
+        ...DEFAULT_HEADER_BRANDING,
+        slides: DEFAULT_HEADER_BRANDING.slides.map(s => ({ ...s })),
+        updatedAt: 0
+      },
+      headerAdminUnlocked: false,
+      currentSlideIndex: 0,
+      sourceLabel: 'DATA KEPENDUDUKAN 2006 EXCEL (Jawaban)',
+      matrixPin: DEFAULT_MATRIX_PIN,
+      matrixUnlocked: false,
+      addressDetailUnlocked: false,
+      searchQuery: '',
+      umkmSearchQuery: '',
+      umkmPermitFilter: 'ALL',
+      editingUmkmKey: '',
+      addressFilter: 'ALL',
+      addressDetailGroup: 'ALL',
+      residentStatusFilter: 'ALL',
+      genderFilter: 'ALL',
+      kkStatusFilter: 'ALL',
+      ageRangeFilter: 'ALL',
+      pageSize: 25,
+      currentPage: 1
+    };
+
+    let deferredInstallPrompt = null;
+    let serviceWorkerRegistered = false;
+    let pwaIconUrls = {
+      icon180: '',
+      icon192: '',
+      icon512: ''
+    };
+
+    let barChart = null;
+    let shareChart = null;
+    let addressBarChart = null;
+    let addressShareChart = null;
+    let headerSlideTimer = null;
+    let headerPollTimer = null;
+
+    // Status sinkronisasi awan lintas perangkat/user
+    let cloudSyncState = {
+      enabled: false,
+      mode: 'lokal-url',
+      db: null,
+      appId: 'default-app-id',
+      userId: null,
+      docRef: null,
+      unsubscribe: null
+    };
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const palette = {
+        success: 'bg-emerald-900 text-emerald-50 border-emerald-700',
+        warning: 'bg-amber-900 text-amber-50 border-amber-700',
+        error: 'bg-rose-900 text-rose-50 border-rose-700',
+        info: 'bg-slate-900 text-slate-50 border-slate-700'
+      };
+      const el = document.createElement('div');
+      el.className = `toast-enter pointer-events-auto border rounded-xl px-4 py-3 text-xs font-semibold shadow-lg ${palette[type] || palette.info}`;
+      el.textContent = message;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.remove();
+      }, 3400);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function sanitizeHttpsUrl(rawUrl, fallbackUrl = DEFAULT_GOOGLE_FORM_URL) {
+      const candidate = String(rawUrl ?? '').trim();
+      if (!candidate) return fallbackUrl;
+      if (candidate.startsWith('data:image/')) {
+        return candidate;
+      }
+      try {
+        const parsed = new URL(candidate);
+        if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+          return parsed.toString();
+        }
+      } catch (_) {
+        try {
+          const withHttps = new URL(`https://${candidate}`);
+          if (withHttps.hostname.includes('.')) {
+            return withHttps.toString();
+          }
+        } catch (_) {
+          // Abaikan URL tidak valid
+        }
+      }
+      return fallbackUrl;
+    }
+
+    // Mengonversi tautan Google Sheets biasa menjadi URL ekspor CSV bila diperlukan
+    function normalizeGoogleSheetsCsvUrl(rawUrl) {
+      const trimmed = String(rawUrl ?? '').trim();
+      if (!trimmed) return '';
+      const sheetMatch = trimmed.match(/https:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      if (sheetMatch && !trimmed.includes('export?format=csv') && !trimmed.includes('/pub?')) {
+        const sheetId = sheetMatch[1];
+        const gidMatch = trimmed.match(/[#&?]gid=(\d+)/);
+        const gidParam = gidMatch ? `&gid=${gidMatch[1]}` : '&gid=0';
+        return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv${gidParam}`;
+      }
+      return trimmed;
+    }
+
+    function computeAgeFromBirthDate(rawBirthDate, referenceDate = new Date()) {
+      if (!rawBirthDate) return null;
+      const str = String(rawBirthDate).replace(/["'“”‘’]/g, '').trim();
+      if (!str) return null;
+
+      let day = null;
+      let month = null;
+      let year = null;
+
+      const dmyMatch = str.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+      if (dmyMatch) {
+        day = parseInt(dmyMatch[1], 10);
+        month = parseInt(dmyMatch[2], 10);
+        year = parseInt(dmyMatch[3], 10);
+      } else {
+        const ymdMatch = str.match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/);
+        if (ymdMatch) {
+          year = parseInt(ymdMatch[1], 10);
+          month = parseInt(ymdMatch[2], 10);
+          day = parseInt(ymdMatch[3], 10);
+        }
+      }
+
+      if (!year || !month || !day || month < 1 || month > 12 || day < 1 || day > 31) {
+        const parsedDate = new Date(str);
+        if (Number.isNaN(parsedDate.getTime())) return null;
+        year = parsedDate.getFullYear();
+        month = parsedDate.getMonth() + 1;
+        day = parsedDate.getDate();
+      }
+
+      const now = referenceDate instanceof Date && !Number.isNaN(referenceDate.getTime())
+        ? referenceDate
+        : new Date();
+      const refYear = Math.max(now.getFullYear(), 2026);
+      const refMonth = now.getMonth() + 1;
+      const refDay = now.getDate();
+
+      let age = refYear - year;
+      if (refMonth < month || (refMonth === month && refDay < day)) {
+        age -= 1;
+      }
+
+      if (age < 0 || age > 110) return null;
+      return age;
+    }
+
+    function inferAgeFromClassification(rawClassification) {
+      const upper = String(rawClassification ?? '').trim().toUpperCase();
+      if (!upper) return null;
+      if (upper.includes('BAYI') || upper.includes('BALITA') || upper.includes('BATITA')) return 1;
+      if (upper.includes('ANAK')) return 8;
+      if (upper.includes('REMAJA')) return 15;
+      if (upper.includes('DEWASA')) return 30;
+      if (upper.includes('LANSIA')) return 65;
+      return null;
+    }
+
+    function parseUmur(rawAge, rawBirthDate = '', rawClassification = '') {
+      if (typeof rawAge === 'number' && Number.isFinite(rawAge)) {
+        const rounded = Math.round(rawAge);
+        if (rounded > 0 && rounded <= 110) return rounded;
+        if (rounded === 0) {
+          const dobAge = computeAgeFromBirthDate(rawBirthDate);
+          return dobAge !== null ? dobAge : 0;
+        }
+        return computeAgeFromBirthDate(rawBirthDate) ?? inferAgeFromClassification(rawClassification) ?? 0;
+      }
+
+      if (rawAge && typeof rawAge === 'object') {
+        const thn = parseInt(rawAge.tahun ?? rawAge.TAHUN ?? 0, 10);
+        if (Number.isFinite(thn) && thn > 0 && thn <= 110) {
+          return thn;
+        }
+        const fromDob = computeAgeFromBirthDate(rawBirthDate);
+        if (fromDob !== null) return fromDob;
+        if (Number.isFinite(thn) && thn === 0) return 0;
+        return inferAgeFromClassification(rawClassification) ?? 0;
+      }
+
+      const cleanedStr = String(rawAge ?? '').replace(/["'“”‘’]/g, '').trim();
+
+      if (cleanedStr) {
+        const yearMatch = cleanedStr.match(/(\d{1,3})\s*(?:TAHUN|THN|YRS?|YR)\b/i);
+        if (yearMatch) {
+          const yrs = parseInt(yearMatch[1], 10);
+          if (Number.isFinite(yrs) && yrs >= 0 && yrs <= 110) return yrs;
+          return computeAgeFromBirthDate(rawBirthDate) ?? inferAgeFromClassification(rawClassification) ?? 0;
+        }
+
+        if (/^\d+\s*(?:BLN|BULAN|MO|MONTH|HR|HARI|DAY)\b/i.test(cleanedStr)) return 0;
+
+        if (/^\d{1,3}$/.test(cleanedStr)) {
+          const numVal = parseInt(cleanedStr, 10);
+          if (Number.isFinite(numVal) && numVal > 0 && numVal <= 110) return numVal;
+          if (numVal === 0) {
+            const dobAge = computeAgeFromBirthDate(rawBirthDate);
+            return dobAge !== null ? dobAge : 0;
+          }
+        }
+      }
+
+      const dobAge = computeAgeFromBirthDate(rawBirthDate);
+      if (dobAge !== null) return dobAge;
+
+      const clsAge = inferAgeFromClassification(rawClassification);
+      if (clsAge !== null) return clsAge;
+
+      return 0;
+    }
+
+    function normalizeGender(rawGender) {
+      const val = String(rawGender ?? '').trim().toUpperCase();
+      if (
+        val === 'L' ||
+        val === 'LK' ||
+        val === 'LAKI-LAKI' ||
+        val === 'LAKI LAKI' ||
+        val === 'LAKILAKI' ||
+        val === 'MALE' ||
+        val === 'PRIA'
+      ) {
+        return 'LAKI-LAKI';
+      }
+      return 'PEREMPUAN';
+    }
+
+    function normalizeIdNumber(rawVal) {
+      if (typeof rawVal === 'number' && Number.isFinite(rawVal)) {
+        if (!Number.isInteger(rawVal)) {
+          return rawVal.toLocaleString('fullwide', { useGrouping: false }).trim();
+        }
+        return String(Math.round(rawVal));
+      }
+      const str = String(rawVal ?? '').trim();
+      if (!str) return '';
+      return str.replace(/\s+/g, '');
+    }
+
+    function normalizeName(rawName) {
+      return String(rawName ?? '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toUpperCase();
+    }
+
+    function buildResidentNameKey(recordOrName) {
+      if (typeof recordOrName === 'string') return normalizeName(recordOrName);
+      return normalizeName(
+        recordOrName?.nama ??
+        recordOrName?.['NAMA PENDUDUK'] ??
+        recordOrName?.['NAMA WARGA'] ??
+        recordOrName?.['NAMA'] ??
+        ''
+      );
+    }
+
+    function parseInactiveFlagFromText(rawText, defaultValue = true) {
+      const statusText = String(rawText ?? '').trim().toUpperCase();
+      if (!statusText) return defaultValue;
+      if (
+        statusText === 'NONAKTIF' ||
+        statusText === 'NON-AKTIF' ||
+        statusText === 'NON AKTIF' ||
+        statusText === 'TIDAK AKTIF' ||
+        statusText === 'INACTIVE' ||
+        statusText === 'FALSE' ||
+        statusText === '0'
+      ) {
+        return false;
+      }
+      if (
+        statusText === 'AKTIF' ||
+        statusText === 'ACTIVE' ||
+        statusText === 'TRUE' ||
+        statusText === '1'
+      ) {
+        return true;
+      }
+      return defaultValue;
+    }
+
+    function parseKkActiveFlag(row) {
+      if (typeof row?.kkActive === 'boolean') return row.kkActive;
+      const statusText =
+        row?.kkStatus ??
+        row?.status_kk ??
+        row?.['STATUS KK'] ??
+        row?.['STATUS NO KK'] ??
+        '';
+      return parseInactiveFlagFromText(statusText, true);
+    }
+
+    function parseResidentActiveFlag(row) {
+      if (typeof row?.residentActive === 'boolean') return row.residentActive;
+      if (typeof row?.isActive === 'boolean') return row.isActive;
+      const statusText =
+        row?.residentStatus ??
+        row?.status_warga ??
+        row?.['STATUS WARGA'] ??
+        row?.['STATUS PENDUDUK'] ??
+        '';
+      return parseInactiveFlagFromText(statusText, true);
+    }
+
+    function normalizeYesNo(rawVal) {
+      if (rawVal === true || rawVal === 1) return 'YA';
+      const cleaned = String(rawVal ?? '')
+        .replace(/["'“”‘’.,;:!?]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toUpperCase();
+
+      if (!cleaned) return 'TIDAK';
+      if (
+        cleaned === 'TIDAK' ||
+        cleaned === 'TDK' ||
+        cleaned === 'NO' ||
+        cleaned === 'N' ||
+        cleaned === 'FALSE' ||
+        cleaned === '0' ||
+        cleaned === '-' ||
+        cleaned === 'BUKAN' ||
+        cleaned === 'BELUM' ||
+        cleaned === 'NIHIL'
+      ) {
+        return 'TIDAK';
+      }
+      if (
+        cleaned === 'YA' ||
+        cleaned === 'IYA' ||
+        cleaned === 'Y' ||
+        cleaned === 'YES' ||
+        cleaned === 'TRUE' ||
+        cleaned === '1' ||
+        cleaned === 'ADA' ||
+        cleaned === 'PUNYA'
+      ) {
+        return 'YA';
+      }
+      return 'TIDAK';
+    }
+
+    function pickColumnValue(obj, exactCandidates, keywordCandidates = []) {
+      if (!obj || typeof obj !== 'object') return undefined;
+      const keys = Object.keys(obj);
+
+      for (let i = 0; i < exactCandidates.length; i += 1) {
+        const target = exactCandidates[i].toUpperCase();
+        if (obj[exactCandidates[i]] !== undefined) return obj[exactCandidates[i]];
+        const matchedKey = keys.find(k => String(k || '').trim().toUpperCase() === target);
+        if (matchedKey !== undefined) return obj[matchedKey];
+      }
+
+      if (Array.isArray(keywordCandidates) && keywordCandidates.length > 0) {
+        for (let i = 0; i < keywordCandidates.length; i += 1) {
+          const kw = keywordCandidates[i].toUpperCase();
+          const matchedKey = keys.find(k => String(k || '').trim().toUpperCase().includes(kw));
+          if (matchedKey !== undefined) return obj[matchedKey];
+        }
+      }
+
+      return undefined;
+    }
+
+    function cleanResidents(rawList, externalKkStatusMap = {}, externalResidentStatusMap = {}, externalUmkmMetaMap = {}) {
+      if (!Array.isArray(rawList)) return [];
+
+      const kkActiveLookup = new Map();
+      Object.entries(externalKkStatusMap || {}).forEach(([kk, active]) => {
+        const cleanKk = normalizeIdNumber(kk);
+        if (cleanKk) kkActiveLookup.set(cleanKk, Boolean(active));
+      });
+
+      const residentActiveLookup = new Map();
+      Object.entries(externalResidentStatusMap || {}).forEach(([nameKey, active]) => {
+        const cleanKey = normalizeName(nameKey);
+        if (cleanKey) residentActiveLookup.set(cleanKey, Boolean(active));
+      });
+
+      const umkmMetaLookup = new Map();
+      Object.entries(externalUmkmMetaMap || {}).forEach(([nameKey, meta]) => {
+        const cleanKey = normalizeName(nameKey);
+        if (cleanKey && meta && typeof meta === 'object') {
+          umkmMetaLookup.set(cleanKey, {
+            perijinan: String(meta.perijinan ?? '').replace(/\s+/g, ' ').trim(),
+            nama_umkm: String(meta.nama_umkm ?? meta.nama_produk ?? '').replace(/\s+/g, ' ').trim()
+          });
+        }
+      });
+
+      const seenNameKeys = new Set();
+      const normalizedRows = [];
+
+      rawList.forEach((item, idx) => {
+        if (!item || typeof item !== 'object') return;
+
+        const noKkRaw = pickColumnValue(item, ['no_kk', 'NO KK', 'NO. KK', 'NOMOR KK'], ['NO KK', 'NOMOR KK']);
+        const nikRaw = pickColumnValue(item, ['nik', 'NIK', 'NO NIK'], ['NIK']);
+        const namaRaw = pickColumnValue(item, ['nama', 'NAMA PENDUDUK', 'NAMA WARGA', 'NAMA', 'NAMA LENGKAP'], ['NAMA PENDUDUK', 'NAMA WARGA', 'NAMA LENGKAP']);
+        const jkRaw = pickColumnValue(item, ['jk', 'JENIS KELAMIN', 'JK', 'GENDER'], ['JENIS KELAMIN']);
+        const dobRaw = pickColumnValue(item, ['tanggal_lahir', 'TANGGAL LAHIR', 'TGL LAHIR', 'LAHIR'], ['TANGGAL LAHIR', 'TGL LAHIR']);
+        const umurRaw = pickColumnValue(item, ['umur', 'UMUR', 'USIA'], ['UMUR', 'USIA']);
+        const klasifikasiUmurRaw = pickColumnValue(item, ['klasifikasi_umur', 'KLASIFIKASI UMUR', 'KATEGORI UMUR'], ['KLASIFIKASI UMUR']);
+        const tahunRaw = pickColumnValue(item, ['tahun', 'TAHUN']);
+        const bulanRaw = pickColumnValue(item, ['bulan', 'BULAN']);
+        const hariRaw = pickColumnValue(item, ['hari', 'HARI']);
+        const alamatRaw = pickColumnValue(item, ['alamat', 'ALAMAT SEKARANG', 'ALAMAT'], ['ALAMAT']);
+        const umkmRaw = pickColumnValue(item, ['umkm', 'PENGUSAHA UMKM', 'UMKM', 'APAKAH ANDA PENGUSAHA UMKM'], ['PENGUSAHA UMKM', 'UMKM']);
+        const perijinanRaw = pickColumnValue(item, ['perijinan', 'PERIJINAN', 'PERIZINAN', 'IJIN USAHA', 'IZIN USAHA'], ['PERIJINAN', 'PERIZINAN', 'IJIN', 'IZIN']);
+        const namaProdukRaw = pickColumnValue(item, ['nama_produk', 'NAMA PRODUK', 'PRODUK', 'nama_umkm', 'NAMA UMKM', 'NAMA USAHA'], ['NAMA PRODUK', 'PRODUK', 'NAMA UMKM', 'NAMA USAHA']);
+        const disabilitasRaw = pickColumnValue(item, ['disabilitas', 'DISABILITAS'], ['DISABILITAS']);
+        const anakYatimRaw = pickColumnValue(item, ['anak_yatim', 'ANAK YATIM <= 12 TAHUN', 'ANAK YATIM'], ['YATIM']);
+
+        const noKk = normalizeIdNumber(noKkRaw ?? '');
+        const nik = normalizeIdNumber(nikRaw ?? '');
+        const nama = String(namaRaw ?? '').replace(/\s+/g, ' ').trim();
+        const tanggalLahir = String(dobRaw ?? '').replace(/["']/g, '').trim();
+
+        const nameKey = buildResidentNameKey({ nama });
+        if (!nameKey || seenNameKeys.has(nameKey)) return;
+        seenNameKeys.add(nameKey);
+
+        const jk = normalizeGender(jkRaw ?? '');
+        const ageSource = (umurRaw !== undefined && umurRaw !== null && String(umurRaw).trim() !== '')
+          ? umurRaw
+          : { tahun: tahunRaw ?? 0, bulan: bulanRaw ?? 0, hari: hariRaw ?? 0 };
+        const umur = parseUmur(ageSource, tanggalLahir, klasifikasiUmurRaw);
+        const alamat = String(alamatRaw ?? 'RT 05 RW 04 Jrebeng Wetan').replace(/\s+/g, ' ').trim() || 'RT 05 RW 04 Jrebeng Wetan';
+
+        const umkm = normalizeYesNo(umkmRaw ?? 'TIDAK');
+        const rowPerijinan = String(perijinanRaw ?? '').replace(/\s+/g, ' ').trim();
+        const rowNamaProduk = String(namaProdukRaw ?? '').replace(/\s+/g, ' ').trim();
+        const disabilitas = normalizeYesNo(disabilitasRaw ?? 'TIDAK');
+        const anakYatim = normalizeYesNo(anakYatimRaw ?? 'TIDAK');
+
+        const rowKkActive = parseKkActiveFlag(item);
+        if (noKk && !kkActiveLookup.has(noKk)) kkActiveLookup.set(noKk, rowKkActive);
+
+        const rowResidentActive = parseResidentActiveFlag(item);
+        if (!residentActiveLookup.has(nameKey)) residentActiveLookup.set(nameKey, rowResidentActive);
+
+        const savedUmkm = umkmMetaLookup.get(nameKey);
+
+        normalizedRows.push({
+          id: `res-${idx + 1}-${nameKey}`,
+          nameKey,
+          no_kk: noKk,
+          nik,
+          nama,
+          jk,
+          tanggal_lahir: tanggalLahir,
+          umur,
+          alamat,
+          umkm,
+          perijinan: savedUmkm ? savedUmkm.perijinan : rowPerijinan,
+          nama_umkm: savedUmkm ? savedUmkm.nama_umkm : rowNamaProduk,
+          disabilitas,
+          anak_yatim: anakYatim,
+          kkActive: noKk && kkActiveLookup.has(noKk) ? kkActiveLookup.get(noKk) : rowKkActive,
+          residentActive: residentActiveLookup.has(nameKey) ? residentActiveLookup.get(nameKey) : rowResidentActive
+        });
+      });
+
+      return normalizedRows.map(rec => ({
+        ...rec,
+        kkActive: rec.no_kk && kkActiveLookup.has(rec.no_kk) ? kkActiveLookup.get(rec.no_kk) : rec.kkActive,
+        residentActive: residentActiveLookup.has(rec.nameKey) ? residentActiveLookup.get(rec.nameKey) : rec.residentActive !== false
+      }));
+    }
+
+    function summarizeResidents(list) {
+      const items = Array.isArray(list) ? list : [];
+      const inactiveKkSet = new Set();
+      const activeKkSet = new Set();
+
+      items.forEach(r => {
+        const kk = normalizeIdNumber(r?.no_kk ?? '');
+        if (kk && r?.kkActive === false) inactiveKkSet.add(kk);
+      });
+
+      items.forEach(r => {
+        const kk = normalizeIdNumber(r?.no_kk ?? '');
+        if (kk && !inactiveKkSet.has(kk) && r?.kkActive !== false) activeKkSet.add(kk);
+      });
+
+      const activeResidentsByName = new Map();
+      const excludedResidentsByName = new Map();
+      let totalResidentActiveFlagCount = 0;
+      let totalResidentInactiveFlagCount = 0;
+      let inactiveResidentOnlyCount = 0;
+      let inactiveKkMemberCount = 0;
+
+      items.forEach(r => {
+        const key = buildResidentNameKey(r);
+        if (!key) return;
+        const kk = normalizeIdNumber(r?.no_kk ?? '');
+        const isInactiveByKk = (kk && inactiveKkSet.has(kk)) || r?.kkActive === false;
+        const isResidentInactive = r?.residentActive === false;
+
+        if (isResidentInactive) totalResidentInactiveFlagCount += 1;
+        else totalResidentActiveFlagCount += 1;
+
+        if (isInactiveByKk || isResidentInactive) {
+          if (!excludedResidentsByName.has(key)) {
+            excludedResidentsByName.set(key, r);
+            if (isInactiveByKk) inactiveKkMemberCount += 1;
+            else inactiveResidentOnlyCount += 1;
+          }
+        } else if (!activeResidentsByName.has(key)) {
+          activeResidentsByName.set(key, {
+            ...r,
+            no_kk: kk,
+            kkActive: true,
+            residentActive: true
+          });
+        }
+      });
+
+      const activeResidents = Array.from(activeResidentsByName.values());
+      const excludedResidents = Array.from(excludedResidentsByName.values());
+
+      let lakiLaki = 0;
+      let perempuan = 0;
+      let umkmYesCount = 0;
+      let umkmNoCount = 0;
+      let disabilityYesCount = 0;
+      let disabilityNoCount = 0;
+      let orphanYesCount = 0;
+      let orphanNoCount = 0;
+
+      activeResidents.forEach(r => {
+        if (r.jk === 'LAKI-LAKI') lakiLaki += 1;
+        else perempuan += 1;
+
+        if (normalizeYesNo(r.umkm) === 'YA') umkmYesCount += 1;
+        else umkmNoCount += 1;
+
+        if (normalizeYesNo(r.disabilitas) === 'YA') disabilityYesCount += 1;
+        else disabilityNoCount += 1;
+
+        if (normalizeYesNo(r.anak_yatim) === 'YA') orphanYesCount += 1;
+        else orphanNoCount += 1;
+      });
+
+      const totalPenduduk = activeResidents.length;
+      const totalKkAktif = activeKkSet.size;
+      const totalKkNonAktif = inactiveKkSet.size;
+      const inactiveResidentsCount = excludedResidents.length;
+      const avgPerActiveKk = totalKkAktif > 0 ? totalPenduduk / totalKkAktif : 0;
+
+      return {
+        totalPenduduk,
+        totalResidentActiveFlagCount,
+        totalResidentInactiveFlagCount,
+        totalKkAktif,
+        totalKkNonAktif,
+        inactiveKkList: Array.from(inactiveKkSet),
+        inactiveResidentsCount,
+        inactiveResidentOnlyCount,
+        inactiveKkMemberCount,
+        lakiLaki,
+        perempuan,
+        umkmCount: umkmYesCount,
+        umkmYesCount,
+        umkmNoCount,
+        disabilityCount: disabilityYesCount,
+        disabilityYesCount,
+        disabilityNoCount,
+        orphanCount: orphanYesCount,
+        orphanYesCount,
+        orphanNoCount,
+        avgPerActiveKk,
+        activeResidents
+      };
+    }
+
+    // Fallback parser CSV/TSV sederhana jika PapaParse tidak tersedia
+    function fallbackParseDelimited(text) {
+      const lines = text.split('\n').filter(l => l.trim() !== '');
+      if (lines.length === 0) return [];
+      const delim = lines[0].includes('\t') ? '\t' : ',';
+      const splitLine = (line) => {
+        const out = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i += 1) {
+          const ch = line[i];
+          if (ch === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+              cur += '"';
+              i += 1;
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if (ch === delim && !inQuotes) {
+            out.push(cur.trim());
+            cur = '';
+          } else {
+            cur += ch;
+          }
+        }
+        out.push(cur.trim());
+        return out;
+      };
+
+      const headers = splitLine(lines[0]);
+      return lines.slice(1).map((line) => {
+        const cols = splitLine(line);
+        const obj = {};
+        headers.forEach((h, i) => {
+          obj[h || `COL_${i}`] = cols[i] ?? '';
+        });
+        return obj;
+      });
+    }
+
+    function parseSpreadsheetRowsSmart(rawText) {
+      const cleanedText = String(rawText ?? '')
+        .replace(/^\uFEFF/, '')
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        .trim();
+      if (!cleanedText) return [];
+
+      if (typeof Papa !== 'undefined' && typeof Papa.parse === 'function') {
+        const headerParsed = Papa.parse(cleanedText, {
+          header: true,
+          skipEmptyLines: true,
+          delimiter: ''
+        });
+        const rows = Array.isArray(headerParsed.data) ? headerParsed.data : [];
+        const fields = Array.isArray(headerParsed.meta?.fields)
+          ? headerParsed.meta.fields.map(f => String(f || '').trim().toUpperCase())
+          : [];
+
+        const hasKnownHeader = fields.some(f =>
+          f.includes('NAMA') || f.includes('NIK') || f.includes('NO KK') || f.includes('KK') || f.includes('JK') || f.includes('KELAMIN')
+        );
+
+        if (hasKnownHeader && rows.length > 0) {
+          return rows;
+        }
+      }
+
+      return fallbackParseDelimited(cleanedText);
+    }
+
+    function findAgeRangeForAge(age, ranges) {
+      const list = Array.isArray(ranges) && ranges.length > 0 ? ranges : DEFAULT_AGE_RANGES;
+      const numericAge = typeof age === 'number' && Number.isFinite(age)
+        ? Math.max(0, Math.min(110, Math.round(age)))
+        : parseUmur(age);
+
+      for (let i = 0; i < list.length; i += 1) {
+        const min = Math.max(0, parseInt(list[i].min, 10) || 0);
+        const rawMax = parseInt(list[i].max, 10);
+        const max = Number.isFinite(rawMax) && rawMax >= min ? rawMax : 200;
+        if (numericAge >= min && numericAge <= max) return list[i].label;
+      }
+
+      return list[list.length - 1].label;
+    }
+
+    function saveStateToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEYS.residents, JSON.stringify(state.residents));
+        localStorage.setItem(STORAGE_KEYS.kkStatusMap, JSON.stringify(state.kkStatusMap));
+        localStorage.setItem(STORAGE_KEYS.residentStatusMap, JSON.stringify(state.residentStatusMap));
+        localStorage.setItem(STORAGE_KEYS.umkmMetaMap, JSON.stringify(state.umkmMetaMap));
+        localStorage.setItem(STORAGE_KEYS.ranges, JSON.stringify(state.ageRanges));
+        localStorage.setItem(STORAGE_KEYS.csvUrl, state.csvUrl);
+        localStorage.setItem(STORAGE_KEYS.formUrl, state.formUrl);
+        localStorage.setItem(STORAGE_KEYS.sourceLabel, state.sourceLabel);
+        localStorage.setItem(STORAGE_KEYS.matrixPin, String(state.matrixPin || DEFAULT_MATRIX_PIN));
+        localStorage.setItem(STORAGE_KEYS.headerBranding, JSON.stringify(state.headerBranding));
+      } catch (err) {
+        console.error('Gagal menyimpan state:', err);
+      }
+    }
+
+    function decodeHeaderPayloadFromUrl() {
+      try {
+        const params = new URLSearchParams(window.location.search || '');
+        const encoded = params.get('h');
+        if (!encoded) return null;
+        const jsonStr = decodeURIComponent(escape(atob(encoded)));
+        const parsed = JSON.parse(jsonStr);
+        if (!parsed || typeof parsed !== 'object') return null;
+
+        const slides = Array.isArray(parsed.slides) && parsed.slides.length > 0
+          ? parsed.slides.map(s => ({
+              url: sanitizeHttpsUrl(s?.url, DEFAULT_HEADER_BRANDING.slides[0].url),
+              caption: String(s?.caption || 'Foto RT05/RW04 Jrebeng Wetan').trim()
+            }))
+          : DEFAULT_HEADER_BRANDING.slides.map(s => ({ ...s }));
+
+        return {
+          title: String(parsed.title || DEFAULT_HEADER_BRANDING.title).trim(),
+          subtitle: String(parsed.subtitle || DEFAULT_HEADER_BRANDING.subtitle).trim(),
+          linkLabel: String(parsed.linkLabel || DEFAULT_HEADER_BRANDING.linkLabel).trim(),
+          linkUrl: sanitizeHttpsUrl(parsed.linkUrl, DEFAULT_GOOGLE_FORM_URL),
+          slides,
+          updatedAt: Number(parsed.updatedAt) || 0
+        };
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function buildShareableHeaderUrl() {
+      const payload = {
+        title: state.headerBranding.title,
+        subtitle: state.headerBranding.subtitle,
+        linkLabel: state.headerBranding.linkLabel,
+        linkUrl: state.headerBranding.linkUrl,
+        slides: state.headerBranding.slides.filter(s => !String(s.url || '').startsWith('data:image/')),
+        updatedAt: state.headerBranding.updatedAt || Date.now()
+      };
+      const baseUrl = `${window.location.origin}${window.location.pathname}`;
+      try {
+        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+        if (encoded.length < 4500) {
+          return `${baseUrl}?h=${encodeURIComponent(encoded)}`;
+        }
+      } catch (_) {
+        // Fallback ke URL dasar
+      }
+      return baseUrl;
+    }
+
+    // Sinkronkan parameter ?h= pada URL browser secara diam-diam agar pengguna yang membuka tautan langsung menerima pembaruan
+    function syncHeaderUrlQueryParam(hasDataUrlSlides = false) {
+      if (window.location.protocol === 'file:') return;
+      try {
+        const urlObj = new URL(window.location.href);
+        if (hasDataUrlSlides) {
+          urlObj.searchParams.delete('h');
+          window.history.replaceState({}, '', urlObj.toString());
+          return;
+        }
+        const payload = {
+          title: state.headerBranding.title,
+          subtitle: state.headerBranding.subtitle,
+          linkLabel: state.headerBranding.linkLabel,
+          linkUrl: state.headerBranding.linkUrl,
+          slides: state.headerBranding.slides.filter(s => !String(s.url || '').startsWith('data:image/')),
+          updatedAt: state.headerBranding.updatedAt || Date.now()
+        };
+        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+        if (encoded.length < 4500) {
+          urlObj.searchParams.set('h', encoded);
+          window.history.replaceState({}, '', urlObj.toString());
+        }
+      } catch (_) {
+        // Abaikan jika replaceState dibatasi konteks
+      }
+    }
+
+    function loadStateFromStorage() {
+      try {
+        const savedUrl = localStorage.getItem(STORAGE_KEYS.csvUrl);
+        if (savedUrl) state.csvUrl = savedUrl;
+
+        const savedFormUrl = localStorage.getItem(STORAGE_KEYS.formUrl);
+        if (savedFormUrl) state.formUrl = sanitizeHttpsUrl(savedFormUrl, DEFAULT_GOOGLE_FORM_URL);
+
+        const savedSource = localStorage.getItem(STORAGE_KEYS.sourceLabel);
+        if (savedSource) state.sourceLabel = savedSource;
+
+        const savedPin = localStorage.getItem(STORAGE_KEYS.matrixPin);
+        if (savedPin && String(savedPin).trim().length >= 4) {
+          state.matrixPin = String(savedPin).trim();
+        }
+
+        const savedBranding = localStorage.getItem(STORAGE_KEYS.headerBranding);
+        if (savedBranding) {
+          const parsedBrand = JSON.parse(savedBranding);
+          if (parsedBrand && typeof parsedBrand === 'object') {
+            state.headerBranding = {
+              title: String(parsedBrand.title || DEFAULT_HEADER_BRANDING.title).trim(),
+              subtitle: String(parsedBrand.subtitle || DEFAULT_HEADER_BRANDING.subtitle).trim(),
+              linkLabel: String(parsedBrand.linkLabel || DEFAULT_HEADER_BRANDING.linkLabel).trim(),
+              linkUrl: sanitizeHttpsUrl(parsedBrand.linkUrl, state.formUrl),
+              slides: Array.isArray(parsedBrand.slides) && parsedBrand.slides.length > 0
+                ? parsedBrand.slides
+                : DEFAULT_HEADER_BRANDING.slides.map(s => ({ ...s })),
+              updatedAt: Number(parsedBrand.updatedAt) || 0
+            };
+          }
+        }
+
+        const urlSharedBranding = decodeHeaderPayloadFromUrl();
+        if (urlSharedBranding) {
+          const localUpdatedAt = Number(state.headerBranding?.updatedAt) || 0;
+          const urlUpdatedAt = Number(urlSharedBranding.updatedAt) || 0;
+          // Utamakan parameter ?h= jika eksplisit ada di URL dan lebih baru atau sama dengan lokal
+          if (urlUpdatedAt >= localUpdatedAt || localUpdatedAt === 0) {
+            state.headerBranding = urlSharedBranding;
+            state.formUrl = urlSharedBranding.linkUrl;
+            try {
+              localStorage.setItem(STORAGE_KEYS.headerBranding, JSON.stringify(state.headerBranding));
+              localStorage.setItem(STORAGE_KEYS.formUrl, state.formUrl);
+            } catch (_) {
+              // Abaikan error penyimpanan
+            }
+          }
+        }
+
+        const savedKkMap = localStorage.getItem(STORAGE_KEYS.kkStatusMap);
+        if (savedKkMap) state.kkStatusMap = JSON.parse(savedKkMap) || {};
+
+        const savedResidentMap = localStorage.getItem(STORAGE_KEYS.residentStatusMap);
+        if (savedResidentMap) state.residentStatusMap = JSON.parse(savedResidentMap) || {};
+
+        const savedUmkmMeta = localStorage.getItem(STORAGE_KEYS.umkmMetaMap);
+        if (savedUmkmMeta) state.umkmMetaMap = JSON.parse(savedUmkmMeta) || {};
+
+        const savedRanges = localStorage.getItem(STORAGE_KEYS.ranges);
+        if (savedRanges) {
+          const parsedRanges = JSON.parse(savedRanges);
+          state.ageRanges = Array.isArray(parsedRanges) && parsedRanges.length > 0
+            ? parsedRanges
+            : DEFAULT_AGE_RANGES.map(r => ({ ...r }));
+        } else {
+          state.ageRanges = DEFAULT_AGE_RANGES.map(r => ({ ...r }));
+        }
+
+        const savedResidents = localStorage.getItem(STORAGE_KEYS.residents);
+        if (savedResidents) {
+          const parsedResidents = JSON.parse(savedResidents);
+          const cleaned = cleanResidents(
+            parsedResidents,
+            state.kkStatusMap,
+            state.residentStatusMap,
+            state.umkmMetaMap
+          );
+          if (cleaned.length > 0) {
+            state.residents = cleaned;
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Gagal memuat state:', err);
+      }
+
+      state.residents = cleanResidents(
+        REFERENCE_SPREADSHEET_SNAPSHOT,
+        state.kkStatusMap,
+        state.residentStatusMap,
+        state.umkmMetaMap
+      );
+      state.sourceLabel = 'DATA KEPENDUDUKAN 2006 EXCEL (Jawaban)';
+      saveStateToStorage();
+    }
+
+    function updateSyncBadgeText(label) {
+      const badge = document.getElementById('headerSyncChannelBadge');
+      if (badge && label) {
+        badge.textContent = label;
+      }
+    }
+
+    // Menerapkan payload header bersama dari penyimpanan awan ke state lokal & UI
+    function applyRemoteHeaderBranding(remoteData, sourceTag = 'Awan') {
+      if (!remoteData || typeof remoteData !== 'object') return false;
+
+      const remoteUpdatedAt = Number(remoteData.updatedAt) || 0;
+      const currentUpdatedAt = Number(state.headerBranding?.updatedAt) || 0;
+      const incomingSlides = Array.isArray(remoteData.slides) && remoteData.slides.length > 0
+        ? remoteData.slides.map(s => ({
+            url: sanitizeHttpsUrl(s?.url, DEFAULT_HEADER_BRANDING.slides[0].url),
+            caption: String(s?.caption || 'Foto RT05/RW04 Jrebeng Wetan').trim()
+          }))
+        : state.headerBranding.slides;
+
+      const candidate = {
+        title: String(remoteData.title || DEFAULT_HEADER_BRANDING.title).trim(),
+        subtitle: String(remoteData.subtitle || DEFAULT_HEADER_BRANDING.subtitle).trim(),
+        linkLabel: String(remoteData.linkLabel || DEFAULT_HEADER_BRANDING.linkLabel).trim(),
+        linkUrl: sanitizeHttpsUrl(remoteData.linkUrl, DEFAULT_GOOGLE_FORM_URL),
+        slides: incomingSlides,
+        updatedAt: remoteUpdatedAt || currentUpdatedAt
+      };
+
+      const isDifferent =
+        candidate.title !== state.headerBranding.title ||
+        candidate.subtitle !== state.headerBranding.subtitle ||
+        candidate.linkLabel !== state.headerBranding.linkLabel ||
+        candidate.linkUrl !== state.headerBranding.linkUrl ||
+        JSON.stringify(candidate.slides) !== JSON.stringify(state.headerBranding.slides);
+
+      if (remoteUpdatedAt > 0 && currentUpdatedAt > 0 && remoteUpdatedAt < currentUpdatedAt && !isDifferent) {
+        return false;
+      }
+
+      if (!isDifferent && remoteUpdatedAt <= currentUpdatedAt) {
+        return false;
+      }
+
+      state.headerBranding = candidate;
+      state.formUrl = candidate.linkUrl;
+      state.currentSlideIndex = 0;
+      if (remoteData.csvUrl) {
+        state.csvUrl = normalizeGoogleSheetsCsvUrl(remoteData.csvUrl);
+      }
+
+      saveStateToStorage();
+      const hasDataUrl = state.headerBranding.slides.some(s => String(s.url || '').startsWith('data:image/'));
+      syncHeaderUrlQueryParam(hasDataUrl);
+      renderHeaderBrandingUi();
+      applyFormUrlToUi();
+      if (state.headerAdminUnlocked) {
+        syncHeaderAdminPanelState();
+      }
+      updateSyncBadgeText(`Sinkron: ${sourceTag}`);
+      return true;
+    }
+
+    // Mengirim pembaruan header ke ruang penyimpanan publik cadangan lintas perangkat/user
+    async function publishToPublicFallbackStore(payload) {
+      try {
+        const endpoint = `${PUBLIC_KV_ENDPOINT}/${encodeURIComponent(PUBLIC_SYNC_NAMESPACE)}`;
+        const resp = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        return resp.ok;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    // Menarik data header terbaru dari ruang penyimpanan publik cadangan
+    async function pullFromPublicFallbackStore(showFeedback = false) {
+      try {
+        const endpoint = `${PUBLIC_KV_ENDPOINT}/${encodeURIComponent(PUBLIC_SYNC_NAMESPACE)}?_t=${Date.now()}`;
+        const resp = await fetch(endpoint, { cache: 'no-store' });
+        if (!resp.ok) {
+          if (showFeedback) showToast('Tidak ada data baru di penyimpanan awan publik.', 'info');
+          return false;
+        }
+        const data = await resp.json();
+        if (!data || typeof data !== 'object') {
+          if (showFeedback) showToast('Format data awan belum tersedia.', 'info');
+          return false;
+        }
+        const applied = applyRemoteHeaderBranding(data, 'Awan Publik');
+        if (showFeedback) {
+          showToast(
+            applied ? 'Header & foto terbaru berhasil disinkronkan.' : 'Header sudah berada pada versi terbaru.',
+            applied ? 'success' : 'info'
+          );
+        }
+        return applied;
+      } catch (_) {
+        if (showFeedback) {
+          showToast('Gunakan "Salin Link Bagikan" (?h=...) jika jaringan awan dibatasi.', 'warning');
+        }
+        return false;
+      }
+    }
+
+    // Mengirim pembaruan header admin ke penyimpanan bersama agar tampil di semua user
+    async function publishHeaderBrandingToAllUsers() {
+      const safeSlides = getActiveSlides()
+        .filter(s => !String(s.url || '').startsWith('data:image/') || String(s.url || '').length < 700000)
+        .map(s => ({
+          url: sanitizeHttpsUrl(s.url, DEFAULT_HEADER_BRANDING.slides[0].url),
+          caption: String(s.caption || 'Foto RT05/RW04 Jrebeng Wetan').trim()
+        }));
+
+      const stamp = Date.now();
+      state.headerBranding.updatedAt = stamp;
+      saveStateToStorage();
+      const hasDataUrl = state.headerBranding.slides.some(s => String(s.url || '').startsWith('data:image/'));
+      syncHeaderUrlQueryParam(hasDataUrl);
+
+      const payload = {
+        title: state.headerBranding.title,
+        subtitle: state.headerBranding.subtitle,
+        linkLabel: state.headerBranding.linkLabel,
+        linkUrl: sanitizeHttpsUrl(state.headerBranding.linkUrl, DEFAULT_GOOGLE_FORM_URL),
+        csvUrl: normalizeGoogleSheetsCsvUrl(state.csvUrl || DEFAULT_SPREADSHEET_CSV_URL),
+        slides: safeSlides.length > 0 ? safeSlides : DEFAULT_HEADER_BRANDING.slides.map(s => ({ ...s })),
+        updatedAt: stamp,
+        updatedBy: cloudSyncState.userId || 'admin-web'
+      };
+
+      let syncedFirestore = false;
+      if (cloudSyncState.enabled && cloudSyncState.docRef && cloudSyncState.userId) {
+        try {
+          await cloudSyncState.setDoc(cloudSyncState.docRef, payload, { merge: true });
+          syncedFirestore = true;
+        } catch (err) {
+          console.error('Gagal menyinkronkan header ke Firestore:', err);
+        }
+      }
+
+      const syncedPublicKv = await publishToPublicFallbackStore(payload);
+      if (syncedFirestore) {
+        updateSyncBadgeText('Sinkron: Real-Time');
+      } else if (syncedPublicKv) {
+        updateSyncBadgeText('Sinkron: Awan Publik');
+      } else {
+        updateSyncBadgeText('Sinkron: URL (?h=...)');
+      }
+
+      return syncedFirestore || syncedPublicKv;
+    }
+
+    // Menginisialisasi autentikasi dan pendengar real-time untuk seluruh pengguna
+    async function initRealtimeMultiUserSync() {
+      const mod = window.__CLOUD_SYNC_MODULE__;
+      const hasFirebaseConfig = mod && typeof __firebase_config !== 'undefined' && __firebase_config;
+
+      if (hasFirebaseConfig) {
+        try {
+          const firebaseConfig = typeof __firebase_config === 'string'
+            ? JSON.parse(__firebase_config)
+            : __firebase_config;
+          if (firebaseConfig && firebaseConfig.apiKey) {
+            const appId = typeof __app_id !== 'undefined' && __app_id
+              ? String(__app_id)
+              : 'rt05-rw04-jrebeng-wetan';
+
+            const app = mod.initializeApp(firebaseConfig);
+            const auth = mod.getAuth(app);
+            const db = mod.getFirestore(app);
+
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              await mod.signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+              await mod.signInAnonymously(auth);
+            }
+
+            const currentUid = auth.currentUser?.uid;
+            if (currentUid) {
+              const docRef = mod.doc(db, 'artifacts', appId, 'public', 'data', 'header_config', 'main_header');
+              cloudSyncState = {
+                enabled: true,
+                mode: 'firestore',
+                db,
+                appId,
+                userId: currentUid,
+                docRef,
+                setDoc: mod.setDoc,
+                unsubscribe: null
+              };
+
+              cloudSyncState.unsubscribe = mod.onSnapshot(
+                docRef,
+                (snap) => {
+                  if (!snap.exists()) return;
+                  const data = snap.data();
+                  if (!data) return;
+                  applyRemoteHeaderBranding(data, 'Real-Time');
+                },
+                (err) => {
+                  console.error('Kesalahan sinkronisasi real-time header:', err);
+                }
+              );
+              updateSyncBadgeText('Sinkron: Real-Time');
+              return;
+            }
+          }
+        } catch (err) {
+          console.error('Gagal mengaktifkan sinkronisasi Firestore:', err);
+        }
+      }
+
+      // Jalur cadangan awan publik + polling ringan bila Firebase globals tidak tersedia di hosting
+      cloudSyncState.mode = 'public-kv';
+      await pullFromPublicFallbackStore(false);
+      if (headerPollTimer) clearInterval(headerPollTimer);
+      headerPollTimer = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          pullFromPublicFallbackStore(false);
+        }
+      }, 15000);
+    }
+
+    // =========================================================================
+    // SLIDESHOW & ADMIN HEADER
+    // =========================================================================
+
+    function getActiveSlides() {
+      const slides = Array.isArray(state.headerBranding?.slides) ? state.headerBranding.slides : [];
+      if (slides.length > 0) return slides;
+      return DEFAULT_HEADER_BRANDING.slides;
+    }
+
+    function renderHeaderSlideViewOnly() {
+      const slides = getActiveSlides();
+      if (state.currentSlideIndex >= slides.length) state.currentSlideIndex = 0;
+      if (state.currentSlideIndex < 0) state.currentSlideIndex = 0;
+
+      const current = slides[state.currentSlideIndex] || slides[0];
+      const imgEl = document.getElementById('headerSlideshowImage');
+      const captionEl = document.getElementById('headerSlideCaption');
+      const counterEl = document.getElementById('headerSlideCounter');
+      const dotsEl = document.getElementById('headerSlideDots');
+
+      if (imgEl) {
+        const fallbackSrc = pwaIconUrls.icon512 || DEFAULT_HEADER_BRANDING.slides[0].url;
+        imgEl.onerror = () => {
+          imgEl.onerror = null;
+          imgEl.src = fallbackSrc;
+        };
+        imgEl.src = current.url || fallbackSrc;
+      }
+      if (captionEl) captionEl.textContent = current.caption || 'RT05 / RW04 Jrebeng Wetan';
+      if (counterEl) counterEl.textContent = `${state.currentSlideIndex + 1} / ${slides.length}`;
+
+      if (dotsEl) {
+        dotsEl.innerHTML = slides.map((s, idx) => {
+          const active = idx === state.currentSlideIndex;
+          return `<button type="button" onclick="goToHeaderSlide(${idx})" aria-label="Slide ${idx + 1}" class="h-2 rounded-full transition-all cursor-pointer ${
+            active ? 'w-6 bg-indigo-600' : 'w-2 bg-slate-300 hover:bg-slate-400'
+          }"></button>`;
+        }).join('');
+      }
+    }
+
+    function goToHeaderSlide(idx) {
+      const slides = getActiveSlides();
+      if (slides.length === 0) return;
+      state.currentSlideIndex = ((idx % slides.length) + slides.length) % slides.length;
+      renderHeaderSlideViewOnly();
+    }
+
+    function startSlideshowTimer() {
+      if (headerSlideTimer) clearInterval(headerSlideTimer);
+      headerSlideTimer = setInterval(() => {
+        const slides = getActiveSlides();
+        if (slides.length > 1) {
+          goToHeaderSlide(state.currentSlideIndex + 1);
+        }
+      }, 4500);
+    }
+
+    function renderHeaderBrandingUi() {
+      const hb = state.headerBranding || DEFAULT_HEADER_BRANDING;
+      document.getElementById('headerMainTitle').textContent = hb.title || DEFAULT_HEADER_BRANDING.title;
+      document.title = hb.title || DEFAULT_HEADER_BRANDING.title;
+      document.getElementById('headerSubtitleText').textContent = hb.subtitle || DEFAULT_HEADER_BRANDING.subtitle;
+      document.getElementById('headerUrlLinkLabel').textContent = hb.linkLabel || DEFAULT_HEADER_BRANDING.linkLabel;
+
+      const urlLink = document.getElementById('headerUrlLink');
+      const safeUrl = sanitizeHttpsUrl(hb.linkUrl || state.formUrl, DEFAULT_GOOGLE_FORM_URL);
+      urlLink.href = safeUrl;
+
+      renderHeaderSlideViewOnly();
+      renderAdminSlidesList();
+    }
+
+    function renderAdminSlidesList() {
+      const listEl = document.getElementById('adminSlidesListContainer');
+      if (!listEl) return;
+      const slides = getActiveSlides();
+      listEl.innerHTML = slides.map((s, idx) => `
+        <div class="flex items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
+          <div class="min-w-0">
+            <p class="font-bold text-slate-800 truncate">${idx + 1}. ${escapeHtml(s.caption || 'Foto Slide')}</p>
+            <p class="text-[11px] font-mono text-slate-500 truncate">${escapeHtml(s.url)}</p>
+          </div>
+          <button type="button" onclick="removeHeaderSlideAt(${idx})" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold cursor-pointer shrink-0">
+            Hapus
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function removeHeaderSlideAt(idx) {
+      if (state.headerBranding.slides.length <= 1) {
+        showToast('Minimal harus ada 1 foto pada slideshow.', 'warning');
+        return;
+      }
+      state.headerBranding.slides.splice(idx, 1);
+      state.currentSlideIndex = 0;
+      renderHeaderSlideViewOnly();
+      renderAdminSlidesList();
+    }
+
+    function syncHeaderAdminPanelState() {
+      const pinGate = document.getElementById('headerAdminPinGate');
+      const editorForm = document.getElementById('headerAdminEditorForm');
+      if (!pinGate || !editorForm) return;
+
+      if (state.headerAdminUnlocked) {
+        pinGate.classList.add('hidden');
+        editorForm.classList.remove('hidden');
+        document.getElementById('adminHeaderTitleInput').value = state.headerBranding.title;
+        document.getElementById('adminHeaderSubtitleInput').value = state.headerBranding.subtitle;
+        document.getElementById('adminHeaderLinkLabelInput').value = state.headerBranding.linkLabel;
+        document.getElementById('adminHeaderUrlInput').value = state.headerBranding.linkUrl;
+        renderAdminSlidesList();
+      } else {
+        pinGate.classList.remove('hidden');
+        editorForm.classList.add('hidden');
+      }
+    }
+
+    function copyTextToClipboard(text, successMsg) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast(successMsg, 'success');
+        }).catch(() => fallbackCopy(text, successMsg));
+      } else {
+        fallbackCopy(text, successMsg);
+      }
+    }
+
+    function fallbackCopy(text, successMsg) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast(successMsg, 'success');
+      } catch (_) {
+        showToast('Gagal menyalin tautan.', 'warning');
+      }
+      document.body.removeChild(ta);
+    }
+
+    // =========================================================================
+    // PWA ICON & LIFECYCLE
+    // =========================================================================
+
+    function generatePngIconDataUrl(size) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return '';
+
+      const grad = ctx.createLinearGradient(0, 0, size, size);
+      grad.addColorStop(0, '#1e1b4b');
+      grad.addColorStop(1, '#0f766e');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, size, size);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(size * 0.5, size * 0.36, size * 0.11, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.ellipse(size * 0.5, size * 0.62, size * 0.21, size * 0.13, 0, Math.PI, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = `800 ${Math.round(size * 0.068)}px Inter, Arial, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('RT05 / RW04', size * 0.5, size * 0.82);
+
+      return canvas.toDataURL('image/png');
+    }
+
+    function applyIconsToDom() {
+      const appleLink = document.getElementById('appleTouchIconLink');
+      if (appleLink && pwaIconUrls.icon180) appleLink.setAttribute('href', pwaIconUrls.icon180);
+
+      const bannerPreview = document.getElementById('pwaBannerIconPreview');
+      if (bannerPreview && pwaIconUrls.icon192) bannerPreview.setAttribute('src', pwaIconUrls.icon192);
+
+      const modalPreview = document.getElementById('pwaModalIconPreview');
+      if (modalPreview && pwaIconUrls.icon192) modalPreview.setAttribute('src', pwaIconUrls.icon192);
+
+      renderHeaderSlideViewOnly();
+    }
+
+    function attachWebAppManifest() {
+      try {
+        const manifest = {
+          name: 'Dashboard Kependudukan RT05/RW04 Jrebeng Wetan',
+          short_name: 'RT05/RW04 Jrebeng Wetan',
+          start_url: '.',
+          display: 'standalone',
+          background_color: '#f8fafc',
+          theme_color: '#1e1b4b',
+          icons: [
+            { src: pwaIconUrls.icon192, sizes: '192x192', type: 'image/png' },
+            { src: pwaIconUrls.icon512, sizes: '512x512', type: 'image/png' }
+          ]
+        };
+        const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        const url = URL.createObjectURL(blob);
+        let linkEl = document.getElementById('dynamicPwaManifestLink');
+        if (!linkEl) {
+          linkEl = document.createElement('link');
+          linkEl.id = 'dynamicPwaManifestLink';
+          linkEl.rel = 'manifest';
+          document.head.appendChild(linkEl);
+        }
+        linkEl.setAttribute('href', url);
+      } catch (_) {
+        // Abaikan bila gagal
+      }
+    }
+
+    function detectStandaloneMode() {
+      return Boolean(
+        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+        window.navigator.standalone
+      );
+    }
+
+    function renderPwaStatusUi() {
+      const isStandalone = detectStandaloneMode();
+      const isFile = window.location.protocol === 'file:';
+      const canPrompt = Boolean(deferredInstallPrompt);
+
+      const badge = document.getElementById('pwaStatusBadge');
+      const desc = document.getElementById('pwaStatusDescription');
+      const nativeBannerBtn = document.getElementById('btnTriggerNativeInstall');
+      const modalNativeWrap = document.getElementById('modalNativeInstallWrap');
+      const modalModeVal = document.getElementById('modalPwaModeValue');
+      const modalSwVal = document.getElementById('modalSwStatusValue');
+      const modalNote = document.getElementById('modalPwaContextNote');
+
+      if (nativeBannerBtn) nativeBannerBtn.classList.toggle('hidden', !canPrompt || isStandalone);
+      if (modalNativeWrap) modalNativeWrap.classList.toggle('hidden', !canPrompt || isStandalone);
+
+      if (isStandalone) {
+        if (badge) badge.textContent = 'Terpasang (Standalone)';
+        if (desc) desc.textContent = 'Aplikasi berjalan sebagai aplikasi terpasang di layar utama.';
+        if (modalModeVal) modalModeVal.textContent = 'Standalone (Terpasang)';
+      } else if (isFile) {
+        if (badge) badge.textContent = 'Mode File Lokal';
+        if (desc) desc.textContent = 'Buka melalui server HTTP/HTTPS untuk mengaktifkan Service Worker & instalasi PWA penuh.';
+        if (modalModeVal) modalModeVal.textContent = 'File Lokal (file://)';
+      } else {
+        if (badge) badge.textContent = canPrompt ? 'Siap Diinstal' : 'Mode Browser';
+        if (desc) desc.textContent = 'Siap dipasang ke layar utama perangkat Android maupun iOS.';
+        if (modalModeVal) modalModeVal.textContent = 'Browser Web';
+      }
+
+      if (modalSwVal) {
+        modalSwVal.textContent = serviceWorkerRegistered ? 'Service Worker Aktif' : 'Tidak Aktif / Menunggu';
+      }
+      if (modalNote) {
+        modalNote.textContent = 'Gunakan menu browser atau tombol instalasi jika tersedia pada perangkat Anda.';
+      }
+    }
+
+    async function registerServiceWorkerSafe() {
+      if (window.location.protocol === 'file:' || !('serviceWorker' in navigator)) {
+        serviceWorkerRegistered = false;
+        renderPwaStatusUi();
+        return;
+      }
+      try {
+        const swCode = `
+          self.addEventListener('install', (e) => self.skipWaiting());
+          self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+        `;
+        const blob = new Blob([swCode], { type: 'application/javascript' });
+        const swUrl = URL.createObjectURL(blob);
+        await navigator.serviceWorker.register(swUrl, { scope: './' });
+        serviceWorkerRegistered = true;
+      } catch (_) {
+        serviceWorkerRegistered = false;
+      }
+      renderPwaStatusUi();
+    }
+
+    function initPwaLifecycle() {
+      pwaIconUrls = {
+        icon180: generatePngIconDataUrl(180),
+        icon192: generatePngIconDataUrl(192),
+        icon512: generatePngIconDataUrl(512)
+      };
+      applyIconsToDom();
+      attachWebAppManifest();
+      renderPwaStatusUi();
+      registerServiceWorkerSafe();
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        renderPwaStatusUi();
+      });
+    }
+
+    // =========================================================================
+    // RENDER SEMUA BAGIAN DASHBOARD
+    // =========================================================================
+
+    function applyFormUrlToUi() {
+      const safeUrl = sanitizeHttpsUrl(state.formUrl, DEFAULT_GOOGLE_FORM_URL);
+      state.formUrl = safeUrl;
+      const extLink = document.getElementById('externalOfficialFormLink');
+      if (extLink) extLink.href = safeUrl;
+
+      const formInput = document.getElementById('customGoogleFormUrlInput');
+      if (formInput && document.activeElement !== formInput) formInput.value = safeUrl;
+
+      const previewEl = document.getElementById('activeFormLinkPreview');
+      if (previewEl) previewEl.textContent = safeUrl;
+    }
+
+    function renderKpiSummary() {
+      applyFormUrlToUi();
+      const summary = summarizeResidents(state.residents);
+      const malePct = summary.totalPenduduk > 0
+        ? ((summary.lakiLaki / summary.totalPenduduk) * 100).toFixed(1).replace('.', ',')
+        : '0,0';
+      const femalePct = summary.totalPenduduk > 0
+        ? ((summary.perempuan / summary.totalPenduduk) * 100).toFixed(1).replace('.', ',')
+        : '0,0';
+
+      document.getElementById('headerStatsBadge').textContent =
+        `${summary.totalPenduduk} Jiwa Terhitung · ${summary.totalKkAktif} KK Aktif`;
+      document.getElementById('headerSourceBadge').textContent =
+        `Sumber: ${state.sourceLabel}`;
+
+      document.getElementById('kpiTotalResidents').textContent = summary.totalPenduduk;
+      document.getElementById('kpiTotalResidentsSub').textContent =
+        `${summary.lakiLaki} Laki-Laki · ${summary.perempuan} Perempuan`;
+
+      document.getElementById('kpiActiveKk').textContent = summary.totalKkAktif;
+      document.getElementById('kpiAvgFamilySize').textContent =
+        `Rata-rata ${summary.avgPerActiveKk.toFixed(1).replace('.', ',')} jiwa / KK aktif`;
+
+      document.getElementById('kpiMaleCount').textContent = summary.lakiLaki;
+      document.getElementById('kpiMaleShare').textContent = `${malePct}% dari penduduk terhitung`;
+
+      document.getElementById('kpiFemaleCount').textContent = summary.perempuan;
+      document.getElementById('kpiFemaleShare').textContent = `${femalePct}% dari penduduk terhitung`;
+
+      document.getElementById('kpiUmkmCount').textContent = summary.umkmYesCount;
+      document.getElementById('kpiUmkmSub').textContent =
+        `Ya: ${summary.umkmYesCount} · Tidak: ${summary.umkmNoCount} (Total: ${summary.umkmYesCount + summary.umkmNoCount})`;
+
+      document.getElementById('kpiDisabilityCount').textContent = summary.disabilityYesCount;
+      document.getElementById('kpiDisabilitySub').textContent =
+        `Ya: ${summary.disabilityYesCount} · Tidak: ${summary.disabilityNoCount} (Total: ${summary.disabilityYesCount + summary.disabilityNoCount})`;
+
+      document.getElementById('kpiOrphanCount').textContent = summary.orphanYesCount;
+      document.getElementById('kpiOrphanSub').textContent =
+        `Ya: ${summary.orphanYesCount} · Tidak: ${summary.orphanNoCount} (Total: ${summary.orphanYesCount + summary.orphanNoCount})`;
+
+      const yesNoCategories = [
+        { label: 'Pengusaha UMKM', yes: summary.umkmYesCount, no: summary.umkmNoCount },
+        { label: 'Disabilitas', yes: summary.disabilityYesCount, no: summary.disabilityNoCount },
+        { label: 'Anak Yatim', yes: summary.orphanYesCount, no: summary.orphanNoCount }
+      ];
+
+      document.getElementById('yesNoSummaryTableBody').innerHTML = yesNoCategories.map(cat => {
+        const total = cat.yes + cat.no;
+        const yesPct = total > 0 ? ((cat.yes / total) * 100).toFixed(1).replace('.', ',') : '0,0';
+        return `
+          <tr class="hover:bg-slate-50/80">
+            <td class="px-4 py-2.5 font-semibold text-slate-800">${escapeHtml(cat.label)}</td>
+            <td class="px-4 py-2.5 text-right font-extrabold text-emerald-700">${cat.yes}</td>
+            <td class="px-4 py-2.5 text-right font-semibold text-slate-700">${cat.no}</td>
+            <td class="px-4 py-2.5 text-right font-extrabold text-slate-900">${total}</td>
+            <td class="px-4 py-2.5 text-right text-slate-600">${yesPct}%</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('yesNoAuditBadge').textContent =
+        `Valid: Ya + Tidak = ${summary.totalPenduduk} Jiwa Aktif`;
+
+      document.getElementById('kpiInactiveKkCount').textContent = `${summary.totalKkNonAktif} KK`;
+      document.getElementById('kpiInactiveMembersSub').textContent =
+        `${summary.inactiveResidentsCount} warga dikecualikan (${summary.inactiveResidentOnlyCount} non-aktif · ${summary.inactiveKkMemberCount} KK non-aktif)`;
+      document.getElementById('kpiInactiveKkListSub').textContent = summary.inactiveKkList.length > 0
+        ? `KK Non-Aktif: ${summary.inactiveKkList.join(', ')}`
+        : 'Tidak ada KK Non-Aktif';
+
+      document.getElementById('quickBadgeActiveResidents').textContent = `${summary.totalResidentActiveFlagCount} Warga Aktif`;
+      document.getElementById('quickBadgeInactiveResidents').textContent = `${summary.totalResidentInactiveFlagCount} Warga Non-Aktif`;
+      document.getElementById('quickBadgeCountedResidents').textContent = `${summary.totalPenduduk} Terhitung (Warga & KK Aktif)`;
+
+      const urlInput = document.getElementById('spreadsheetCsvUrl');
+      if (urlInput && document.activeElement !== urlInput) urlInput.value = state.csvUrl;
+
+      document.getElementById('syncStatusLabel').textContent =
+        `Sumber: ${state.sourceLabel} · ${state.residents.length} nama warga unik (${summary.totalPenduduk} aktif terhitung, ${summary.inactiveResidentsCount} dikecualikan).`;
+    }
+
+    function renderAgeRangeEditor() {
+      const container = document.getElementById('ageRangeEditorList');
+      if (!container) return;
+
+      container.innerHTML = state.ageRanges.map((rng, idx) => `
+        <div class="border border-slate-200 rounded-xl p-2.5 bg-slate-50 flex items-center gap-2">
+          <div class="flex-1 min-w-0">
+            <label class="block text-[11px] font-bold text-slate-600">Label</label>
+            <input type="text" data-range-idx="${idx}" data-field="label" value="${escapeHtml(rng.label)}" class="age-range-input w-full px-2 py-1 rounded-lg border border-slate-300 bg-white text-xs font-semibold" />
+          </div>
+          <div class="w-16">
+            <label class="block text-[11px] font-bold text-slate-600">Min</label>
+            <input type="number" min="0" max="150" data-range-idx="${idx}" data-field="min" value="${escapeHtml(rng.min)}" class="age-range-input w-full px-2 py-1 rounded-lg border border-slate-300 bg-white text-xs" />
+          </div>
+          <div class="w-16">
+            <label class="block text-[11px] font-bold text-slate-600">Max</label>
+            <input type="number" min="0" max="200" data-range-idx="${idx}" data-field="max" value="${escapeHtml(rng.max)}" class="age-range-input w-full px-2 py-1 rounded-lg border border-slate-300 bg-white text-xs" />
+          </div>
+          <button type="button" onclick="removeAgeRange(${idx})" class="mt-4 px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold cursor-pointer">×</button>
+        </div>
+      `).join('');
+
+      document.querySelectorAll('.age-range-input').forEach(inp => {
+        inp.addEventListener('change', (e) => {
+          const idx = parseInt(e.target.getAttribute('data-range-idx'), 10);
+          const field = e.target.getAttribute('data-field');
+          if (!state.ageRanges[idx]) return;
+          if (field === 'label') state.ageRanges[idx].label = e.target.value.trim() || `${state.ageRanges[idx].min}-${state.ageRanges[idx].max}`;
+          else if (field === 'min') state.ageRanges[idx].min = Math.max(0, parseInt(e.target.value, 10) || 0);
+          else if (field === 'max') state.ageRanges[idx].max = Math.max(0, parseInt(e.target.value, 10) || 0);
+        });
+      });
+
+      const ageSelect = document.getElementById('filterAgeBracketSelect');
+      if (ageSelect) {
+        const currentVal = state.ageRangeFilter;
+        ageSelect.innerHTML = `<option value="ALL">Semua Rentang Umur</option>` +
+          state.ageRanges.map(r => `<option value="${escapeHtml(r.label)}">${escapeHtml(r.label)} tahun</option>`).join('');
+        ageSelect.value = state.ageRanges.some(r => r.label === currentVal) ? currentVal : 'ALL';
+        state.ageRangeFilter = ageSelect.value;
+      }
+    }
+
+    function addAgeRange() {
+      const last = state.ageRanges[state.ageRanges.length - 1];
+      const nextMin = last ? (parseInt(last.max, 10) || 0) + 1 : 0;
+      state.ageRanges.push({ label: `${nextMin}-${nextMin + 9}`, min: nextMin, max: nextMin + 9 });
+      renderAgeRangeEditor();
+    }
+
+    function removeAgeRange(index) {
+      if (state.ageRanges.length <= 1) {
+        showToast('Minimal harus ada 1 rentang umur.', 'warning');
+        return;
+      }
+      state.ageRanges.splice(index, 1);
+      renderAgeRangeEditor();
+      renderAgeMatrixAndCharts();
+    }
+
+    function saveAgeRanges() {
+      state.ageRanges = state.ageRanges.map(r => {
+        const min = Math.max(0, parseInt(r.min, 10) || 0);
+        const max = Math.max(min, parseInt(r.max, 10) || min);
+        return { label: String(r.label || `${min}-${max}`).trim(), min, max };
+      });
+      saveStateToStorage();
+      renderAgeRangeEditor();
+      renderAgeMatrixAndCharts();
+      showToast('Rentang umur tersimpan.', 'success');
+    }
+
+    function resetAgeRanges() {
+      state.ageRanges = DEFAULT_AGE_RANGES.map(r => ({ ...r }));
+      saveStateToStorage();
+      renderAgeRangeEditor();
+      renderAgeMatrixAndCharts();
+      showToast('Rentang umur dikembalikan ke default.', 'info');
+    }
+
+    function renderAgeMatrixAndCharts() {
+      const summary = summarizeResidents(state.residents);
+      const activeResidents = summary.activeResidents;
+      const activeRanges = state.ageRanges.length > 0 ? state.ageRanges : DEFAULT_AGE_RANGES;
+
+      const countsByLabel = new Map();
+      activeRanges.forEach(r => countsByLabel.set(r.label, { male: 0, female: 0, total: 0 }));
+
+      activeResidents.forEach(res => {
+        const bucket = findAgeRangeForAge(res.umur, activeRanges);
+        const entry = countsByLabel.get(bucket) || { male: 0, female: 0, total: 0 };
+        if (res.jk === 'LAKI-LAKI') entry.male += 1;
+        else entry.female += 1;
+        entry.total += 1;
+        countsByLabel.set(bucket, entry);
+      });
+
+      const totalActive = activeResidents.length;
+      let sumMale = 0;
+      let sumFemale = 0;
+      const labels = [];
+      const maleSeries = [];
+      const femaleSeries = [];
+      const totalSeries = [];
+
+      document.getElementById('ageMatrixTableBody').innerHTML = activeRanges.map(r => {
+        const stat = countsByLabel.get(r.label) || { male: 0, female: 0, total: 0 };
+        sumMale += stat.male;
+        sumFemale += stat.female;
+        const pct = totalActive > 0 ? ((stat.total / totalActive) * 100).toFixed(1).replace('.', ',') : '0,0';
+        labels.push(r.label);
+        maleSeries.push(stat.male);
+        femaleSeries.push(stat.female);
+        totalSeries.push(stat.total);
+
+        return `
+          <tr class="hover:bg-slate-50/80">
+            <td class="px-4 py-2.5 font-semibold text-slate-800">${escapeHtml(r.label)} tahun</td>
+            <td class="px-4 py-2.5 text-right text-sky-800 font-semibold">${stat.male}</td>
+            <td class="px-4 py-2.5 text-right text-rose-800 font-semibold">${stat.female}</td>
+            <td class="px-4 py-2.5 text-right font-extrabold text-slate-900">${stat.total}</td>
+            <td class="px-4 py-2.5 text-right text-slate-600">${pct}%</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('ageMatrixTableFoot').innerHTML = `
+        <tr>
+          <td class="px-4 py-2.5">Total Terhitung (Aktif)</td>
+          <td class="px-4 py-2.5 text-right text-sky-900">${sumMale}</td>
+          <td class="px-4 py-2.5 text-right text-rose-900">${sumFemale}</td>
+          <td class="px-4 py-2.5 text-right text-slate-900">${totalActive}</td>
+          <td class="px-4 py-2.5 text-right">${totalActive > 0 ? '100,0%' : '0,0%'}</td>
+        </tr>
+      `;
+
+      if (typeof Chart !== 'undefined') {
+        if (barChart) barChart.destroy();
+        if (shareChart) shareChart.destroy();
+
+        const barCanvas = document.getElementById('ageBarChartCanvas');
+        const shareCanvas = document.getElementById('ageShareChartCanvas');
+
+        if (barCanvas) {
+          barChart = new Chart(barCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [
+                { label: 'Laki-Laki (Aktif)', data: maleSeries, backgroundColor: '#0284c7', borderRadius: 6 },
+                { label: 'Perempuan (Aktif)', data: femaleSeries, backgroundColor: '#e11d48', borderRadius: 6 }
+              ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+          });
+        }
+
+        if (shareCanvas) {
+          shareChart = new Chart(shareCanvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+              labels,
+              datasets: [{
+                label: 'Jumlah Warga (Aktif)',
+                data: totalSeries,
+                backgroundColor: ['#4f46e5', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#64748b']
+              }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+          });
+        }
+      }
+    }
+
+    function normalizeAddressKey(rawAddr) {
+      const upper = String(rawAddr ?? '').replace(/\s+/g, ' ').trim().toUpperCase();
+      if (!upper) return 'LAINNYA';
+      const hasPerumnas = upper.includes('PERUMNAS');
+      const hasLeci = upper.includes('LECI');
+      const hasPepaya = upper.includes('PEPAYA');
+      const hasHesni = upper.includes('HESNI');
+      const hasMastrip = upper.includes('MASTRIP');
+
+      if (hasPerumnas) return 'PERUMNAS';
+      if (hasLeci) return 'LECI';
+      if (hasPepaya) return 'PEPAYA';
+      if (hasHesni) return 'HESNI';
+      if (hasMastrip && !hasPerumnas && !hasPepaya && !hasLeci) return 'JALAN_MASTRIP';
+      return 'LAINNYA';
+    }
+
+    function getSimplifiedAddressLabel(key) {
+      const labels = {
+        PERUMNAS: 'Perumnas',
+        LECI: 'Leci',
+        PEPAYA: 'Pepaya',
+        HESNI: 'Hesni',
+        JALAN_MASTRIP: 'Jalan Mastrip',
+        LAINNYA: 'Lainnya (Non-Kata Kunci)'
+      };
+      return labels[key] || 'Lainnya (Non-Kata Kunci)';
+    }
+
+    function formatBirthDateForAddressDetail(resident) {
+      const rawDob = String(resident?.tanggal_lahir ?? '').replace(/["'“”‘’]/g, '').trim();
+      if (rawDob) return rawDob;
+      const ageNum = typeof resident?.umur === 'number' ? Math.max(0, Math.round(resident.umur)) : parseUmur(resident?.umur);
+      if (ageNum > 0) return `01/01/${Math.max(new Date().getFullYear(), 2026) - ageNum}`;
+      return '-';
+    }
+
+    function renderAddressCharts(groups) {
+      if (typeof Chart === 'undefined') return;
+      if (addressBarChart) addressBarChart.destroy();
+      if (addressShareChart) addressShareChart.destroy();
+
+      const list = Array.isArray(groups) ? groups : [];
+      const labels = list.map(g => g.label);
+      const kkSeries = list.map(g => g.kkSet.size);
+      const maleSeries = list.map(g => g.male);
+      const femaleSeries = list.map(g => g.female);
+      const totalSeries = list.map(g => g.total);
+
+      const barCanvas = document.getElementById('addressBarChartCanvas');
+      const shareCanvas = document.getElementById('addressShareChartCanvas');
+
+      if (barCanvas) {
+        addressBarChart = new Chart(barCanvas.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              { label: 'Jumlah KK (Aktif)', data: kkSeries, backgroundColor: '#4f46e5', borderRadius: 6 },
+              { label: 'Laki-Laki (Aktif)', data: maleSeries, backgroundColor: '#0284c7', borderRadius: 6 },
+              { label: 'Perempuan (Aktif)', data: femaleSeries, backgroundColor: '#e11d48', borderRadius: 6 }
+            ]
+          },
+          options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        });
+      }
+
+      if (shareCanvas) {
+        addressShareChart = new Chart(shareCanvas.getContext('2d'), {
+          type: 'doughnut',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Total Jiwa (Aktif)',
+              data: totalSeries,
+              backgroundColor: ['#d97706', '#0d9488', '#e11d48', '#4f46e5', '#0284c7', '#64748b']
+            }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+        });
+      }
+    }
+
+    function renderAddressDetailPinState() {
+      const badgeEl = document.getElementById('addressDetailLockBadge');
+      const lockCardEl = document.getElementById('addressDetailPinLockCard');
+      const protectedEl = document.getElementById('addressDetailProtectedContent');
+      const controlsEl = document.getElementById('addressDetailUnlockedControls');
+
+      if (state.addressDetailUnlocked) {
+        badgeEl.textContent = 'Terbuka (PIN Terverifikasi)';
+        badgeEl.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300';
+        lockCardEl.classList.add('hidden');
+        protectedEl.classList.remove('hidden');
+        controlsEl.classList.remove('hidden');
+        controlsEl.classList.add('flex');
+      } else {
+        badgeEl.textContent = 'Terkunci PIN';
+        badgeEl.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300';
+        lockCardEl.classList.remove('hidden');
+        protectedEl.classList.add('hidden');
+        controlsEl.classList.add('hidden');
+        controlsEl.classList.remove('flex');
+      }
+    }
+
+    function renderAddressDetailPanel(activeResidents, groups) {
+      renderAddressDetailPinState();
+      const detailSelect = document.getElementById('addressDetailGroupSelect');
+      const titleEl = document.getElementById('addressDetailTitle');
+      const tbody = document.getElementById('addressDetailTableBody');
+
+      detailSelect.innerHTML = `<option value="ALL">Semua Kelompok Alamat Aktif (${activeResidents.length})</option>` +
+        groups.map(g => `<option value="${escapeHtml(g.key)}">${escapeHtml(g.label)} (${g.total})</option>`).join('');
+      detailSelect.value = state.addressDetailGroup;
+
+      const detailRows = activeResidents.filter(r => state.addressDetailGroup === 'ALL' || normalizeAddressKey(r.alamat) === state.addressDetailGroup);
+      const activeGroupLabel = state.addressDetailGroup === 'ALL' ? 'Semua Kelompok Alamat Aktif' : getSimplifiedAddressLabel(state.addressDetailGroup);
+      titleEl.textContent = `Rincian Warga — ${activeGroupLabel} (${detailRows.length} Jiwa)`;
+
+      if (!state.addressDetailUnlocked) return;
+
+      tbody.innerHTML = detailRows.length === 0
+        ? `<tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">Tidak ada data warga aktif pada kelompok ini.</td></tr>`
+        : detailRows.map((r, idx) => `
+            <tr class="hover:bg-amber-50/40">
+              <td class="px-3 py-2 text-slate-500">${idx + 1}</td>
+              <td class="px-3 py-2 font-semibold text-slate-900">${escapeHtml(r.nama || '-')}</td>
+              <td class="px-3 py-2 font-mono text-xs">${escapeHtml(r.no_kk || '-')}</td>
+              <td class="px-3 py-2 font-mono text-xs">${escapeHtml(r.nik || '-')}</td>
+              <td class="px-3 py-2 text-xs">${escapeHtml(formatBirthDateForAddressDetail(r))}</td>
+              <td class="px-3 py-2 text-xs font-semibold text-amber-900">${escapeHtml(getSimplifiedAddressLabel(normalizeAddressKey(r.alamat)))}</td>
+            </tr>
+          `).join('');
+    }
+
+    function renderAddressGrouping() {
+      const summary = summarizeResidents(state.residents);
+      const activeResidents = summary.activeResidents;
+      const orderedKeys = ['PERUMNAS', 'LECI', 'PEPAYA', 'HESNI', 'JALAN_MASTRIP', 'LAINNYA'];
+      const groupsMap = new Map();
+
+      orderedKeys.forEach(key => {
+        groupsMap.set(key, { key, label: getSimplifiedAddressLabel(key), kkSet: new Set(), male: 0, female: 0, total: 0 });
+      });
+
+      activeResidents.forEach(r => {
+        const key = normalizeAddressKey(r.alamat);
+        const entry = groupsMap.get(key);
+        if (!entry) return;
+        if (r.no_kk) entry.kkSet.add(r.no_kk);
+        if (r.jk === 'LAKI-LAKI') entry.male += 1;
+        else entry.female += 1;
+        entry.total += 1;
+      });
+
+      const groups = orderedKeys.map(k => groupsMap.get(k)).filter(g => g && (g.key !== 'LAINNYA' || g.total > 0));
+      const totalActive = activeResidents.length;
+
+      document.getElementById('addressGroupCountBadge').textContent = `${groups.length} Kelompok Alamat`;
+
+      const addrSelect = document.getElementById('filterAddressSelect');
+      if (addrSelect) {
+        const prevVal = state.addressFilter;
+        addrSelect.innerHTML = `<option value="ALL">Semua Alamat</option>` +
+          groups.map(g => `<option value="${escapeHtml(g.key)}">${escapeHtml(g.label)} (${g.total})</option>`).join('');
+        addrSelect.value = groups.some(g => g.key === prevVal) ? prevVal : 'ALL';
+        state.addressFilter = addrSelect.value;
+      }
+
+      let sumMale = 0;
+      let sumFemale = 0;
+
+      document.getElementById('addressGroupTableBody').innerHTML = groups.map((g, idx) => {
+        sumMale += g.male;
+        sumFemale += g.female;
+        const pct = totalActive > 0 ? ((g.total / totalActive) * 100).toFixed(1).replace('.', ',') : '0,0';
+        const isSelected = state.addressDetailGroup === g.key;
+        return `
+          <tr class="hover:bg-slate-50/80 ${isSelected ? 'bg-amber-50/60' : ''}">
+            <td class="px-4 py-2.5 text-slate-500">${idx + 1}</td>
+            <td class="px-4 py-2.5 font-semibold text-slate-800">${escapeHtml(g.label)}</td>
+            <td class="px-4 py-2.5 text-right font-bold text-indigo-800">${g.kkSet.size}</td>
+            <td class="px-4 py-2.5 text-right font-semibold text-sky-800">${g.male}</td>
+            <td class="px-4 py-2.5 text-right font-semibold text-rose-800">${g.female}</td>
+            <td class="px-4 py-2.5 text-right font-extrabold text-slate-900">${g.total}</td>
+            <td class="px-4 py-2.5 text-right text-slate-600">${pct}%</td>
+            <td class="px-4 py-2.5 text-right whitespace-nowrap">
+              <button type="button" onclick="filterByAddressGroup('${escapeHtml(g.key)}')" class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer ${
+                isSelected ? 'bg-amber-600 text-white' : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200'
+              }">${isSelected ? 'Sedang Dilihat' : 'Lihat Warga'}</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('addressGroupTableFoot').innerHTML = `
+        <tr>
+          <td colspan="2" class="px-4 py-2.5">Total Terhitung (Aktif)</td>
+          <td class="px-4 py-2.5 text-right text-indigo-900">${summary.totalKkAktif}</td>
+          <td class="px-4 py-2.5 text-right text-sky-900">${sumMale}</td>
+          <td class="px-4 py-2.5 text-right text-rose-900">${sumFemale}</td>
+          <td class="px-4 py-2.5 text-right text-slate-900">${totalActive}</td>
+          <td class="px-4 py-2.5 text-right">${totalActive > 0 ? '100,0%' : '0,0%'}</td>
+          <td></td>
+        </tr>
+      `;
+
+      renderAddressCharts(groups);
+      renderAddressDetailPanel(activeResidents, groups);
+    }
+
+    function filterByAddressGroup(addressKey) {
+      state.addressDetailGroup = state.addressDetailGroup === addressKey ? 'ALL' : addressKey;
+      state.addressFilter = state.addressDetailGroup;
+      state.currentPage = 1;
+      renderAddressGrouping();
+      if (state.matrixUnlocked) renderResidentsMatrix();
+    }
+
+    function isUmkmLicensed(perijinanText) {
+      const upper = String(perijinanText ?? '').trim().toUpperCase();
+      return Boolean(upper && upper !== '-' && !upper.includes('BELUM'));
+    }
+
+    function startEditUmkm(nameKey) {
+      state.editingUmkmKey = normalizeName(nameKey);
+      renderUmkmClassification();
+    }
+
+    function cancelEditUmkm() {
+      state.editingUmkmKey = '';
+      renderUmkmClassification();
+    }
+
+    function saveEditUmkm(nameKey) {
+      const cleanKey = normalizeName(nameKey);
+      const nextPerijinan = String(document.getElementById('editUmkmPermitInput')?.value ?? '').trim();
+      const nextNamaProduk = String(document.getElementById('editUmkmProductInput')?.value ?? '').trim();
+
+      state.umkmMetaMap[cleanKey] = { perijinan: nextPerijinan, nama_umkm: nextNamaProduk };
+      state.residents = state.residents.map(r => r.nameKey === cleanKey ? { ...r, perijinan: nextPerijinan, nama_umkm: nextNamaProduk } : r);
+      state.editingUmkmKey = '';
+      saveStateToStorage();
+      renderUmkmClassification();
+      showToast('Data Perijinan & Nama Produk tersimpan.', 'success');
+    }
+
+    function renderUmkmClassification() {
+      const summary = summarizeResidents(state.residents);
+      const umkmYesResidents = summary.activeResidents.filter(r => normalizeYesNo(r.umkm) === 'YA');
+      document.getElementById('umkmClassificationCountBadge').textContent = `${umkmYesResidents.length} Pengusaha UMKM (YA)`;
+
+      const q = String(state.umkmSearchQuery ?? '').trim().toLowerCase();
+      const filteredRows = umkmYesResidents.filter(r => {
+        const licensed = isUmkmLicensed(r.perijinan);
+        if (state.umkmPermitFilter === 'BERIJIN' && !licensed) return false;
+        if (state.umkmPermitFilter === 'BELUM' && licensed) return false;
+        if (q) {
+          const hay = `${r.nama} ${r.nik} ${r.no_kk} ${r.perijinan || ''} ${r.nama_umkm || ''}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      const tbody = document.getElementById('umkmClassificationTableBody');
+      if (filteredRows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">Tidak ada data UMKM sesuai filter.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filteredRows.map((r, idx) => {
+        const permitDisplay = String(r.perijinan ?? '').trim() || 'Belum Diisi';
+        const productDisplay = String(r.nama_umkm ?? '').trim() || 'Belum Diisi';
+        const licensed = isUmkmLicensed(r.perijinan);
+        const permitBadge = licensed
+          ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">${escapeHtml(permitDisplay)}</span>`
+          : `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">${escapeHtml(permitDisplay)}</span>`;
+
+        if (state.editingUmkmKey === r.nameKey) {
+          return `
+            <tr class="bg-orange-50/50">
+              <td class="px-3 py-2.5 text-slate-500">${idx + 1}</td>
+              <td class="px-3 py-2.5 font-semibold">${escapeHtml(r.nama)}</td>
+              <td class="px-3 py-2.5 font-mono text-xs">${escapeHtml(r.nik || '-')}</td>
+              <td class="px-3 py-2.5 font-mono text-xs">${escapeHtml(r.no_kk || '-')}</td>
+              <td class="px-3 py-2.5"><input id="editUmkmPermitInput" type="text" value="${escapeHtml(r.perijinan || '')}" class="w-full px-2.5 py-1.5 rounded-lg border border-orange-300 bg-white text-xs" /></td>
+              <td class="px-3 py-2.5"><input id="editUmkmProductInput" type="text" value="${escapeHtml(r.nama_umkm || '')}" class="w-full px-2.5 py-1.5 rounded-lg border border-orange-300 bg-white text-xs" /></td>
+              <td class="px-3 py-2.5 text-right whitespace-nowrap">
+                <button type="button" onclick="saveEditUmkm('${escapeHtml(r.nameKey)}')" class="px-2.5 py-1 rounded-lg bg-orange-600 text-white text-xs font-bold cursor-pointer">Simpan</button>
+                <button type="button" onclick="cancelEditUmkm()" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold cursor-pointer">Batal</button>
+              </td>
+            </tr>
+          `;
+        }
+
+        return `
+          <tr class="hover:bg-slate-50/80">
+            <td class="px-3 py-2.5 text-slate-500">${idx + 1}</td>
+            <td class="px-3 py-2.5 font-semibold text-slate-900">${escapeHtml(r.nama)}</td>
+            <td class="px-3 py-2.5 font-mono text-xs text-slate-700">${escapeHtml(r.nik || '-')}</td>
+            <td class="px-3 py-2.5 font-mono text-xs text-slate-800">${escapeHtml(r.no_kk || '-')}</td>
+            <td class="px-3 py-2.5 whitespace-nowrap">${permitBadge}</td>
+            <td class="px-3 py-2.5 font-semibold text-slate-800">${escapeHtml(productDisplay)}</td>
+            <td class="px-3 py-2.5 text-right whitespace-nowrap">
+              <button type="button" onclick="startEditUmkm('${escapeHtml(r.nameKey)}')" class="px-2.5 py-1 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-900 border border-orange-200 text-xs font-bold cursor-pointer">Ubah</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function verifyPinValue(enteredPin) {
+      const clean = String(enteredPin ?? '').replace(/\s+/g, '').trim();
+      const target = String(state.matrixPin || DEFAULT_MATRIX_PIN).replace(/\s+/g, '').trim();
+      return Boolean(clean) && clean === target;
+    }
+
+    function getFilteredResidents() {
+      const q = String(state.searchQuery ?? '').trim().toLowerCase();
+      return (Array.isArray(state.residents) ? state.residents : []).filter(r => {
+        if (state.addressFilter !== 'ALL' && normalizeAddressKey(r.alamat) !== state.addressFilter) {
+          return false;
+        }
+        const isResidentActive = r.residentActive !== false;
+        if (state.residentStatusFilter === 'AKTIF' && !isResidentActive) return false;
+        if (state.residentStatusFilter === 'NONAKTIF' && isResidentActive) return false;
+        if (state.genderFilter !== 'ALL' && r.jk !== state.genderFilter) return false;
+        if (state.kkStatusFilter === 'AKTIF' && !r.kkActive) return false;
+        if (state.kkStatusFilter === 'NONAKTIF' && r.kkActive) return false;
+        if (state.ageRangeFilter !== 'ALL') {
+          const bucket = findAgeRangeForAge(r.umur, state.ageRanges);
+          if (bucket !== state.ageRangeFilter) return false;
+        }
+        if (q) {
+          const hay = `${r.nama} ${r.nik} ${r.no_kk} ${r.alamat}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+    }
+
+    function formatYesNoBadge(rawVal) {
+      if (normalizeYesNo(rawVal) === 'YA') {
+        return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200">YA</span>';
+      }
+      return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">TIDAK</span>';
+    }
+
+    function toggleResidentActiveStatus(nameKey) {
+      if (!state.matrixUnlocked) {
+        showToast('Buka kunci PIN Matrik Warga terlebih dahulu.', 'warning');
+        return;
+      }
+      const cleanKey = normalizeName(nameKey);
+      const target = state.residents.find(r => r.nameKey === cleanKey);
+      if (!target) return;
+      const nextActive = !(target.residentActive !== false);
+      state.residentStatusMap[cleanKey] = nextActive;
+      state.residents = state.residents.map(r => r.nameKey === cleanKey ? { ...r, residentActive: nextActive } : r);
+      saveStateToStorage();
+      renderAll();
+      showToast(nextActive ? `Warga "${target.nama}" diaktifkan.` : `Warga "${target.nama}" diset Non-Aktif.`, nextActive ? 'success' : 'warning');
+    }
+
+    function toggleKkActiveStatus(noKk) {
+      if (!state.matrixUnlocked) {
+        showToast('Buka kunci PIN Matrik Warga terlebih dahulu.', 'warning');
+        return;
+      }
+      const cleanKk = normalizeIdNumber(noKk);
+      if (!cleanKk) return;
+      const members = state.residents.filter(r => r.no_kk === cleanKk);
+      const currentlyActive = members.length > 0 ? members.some(r => r.kkActive !== false) : (state.kkStatusMap[cleanKk] !== false);
+      const nextActive = !currentlyActive;
+      state.kkStatusMap[cleanKk] = nextActive;
+      state.residents = state.residents.map(r => r.no_kk === cleanKk ? { ...r, kkActive: nextActive } : r);
+      saveStateToStorage();
+      renderAll();
+      showToast(nextActive ? `NO KK ${cleanKk} diaktifkan.` : `NO KK ${cleanKk} diset Non-Aktif.`, nextActive ? 'success' : 'warning');
+    }
+
+    function renderResidentsMatrix() {
+      if (!state.matrixUnlocked) return;
+
+      const summary = summarizeResidents(state.residents);
+      const filtered = getFilteredResidents();
+      const totalPages = Math.max(1, Math.ceil(filtered.length / state.pageSize));
+      if (state.currentPage > totalPages) state.currentPage = totalPages;
+
+      const startIdx = (state.currentPage - 1) * state.pageSize;
+      const slice = filtered.slice(startIdx, startIdx + state.pageSize);
+
+      document.getElementById('matrixSummaryText').textContent =
+        `Menampilkan ${slice.length} dari ${filtered.length} baris tersaring · Terhitung: ${summary.totalPenduduk} warga aktif (${summary.totalKkAktif} KK aktif) · Dikecualikan: ${summary.inactiveResidentsCount} warga.`;
+      document.getElementById('paginationInfoLabel').textContent = `Halaman ${state.currentPage} dari ${totalPages}`;
+      document.getElementById('btnPrevPage').disabled = state.currentPage <= 1;
+      document.getElementById('btnNextPage').disabled = state.currentPage >= totalPages;
+
+      const tbody = document.getElementById('residentsMatrixBody');
+      if (!tbody) return;
+
+      if (slice.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="13" class="px-4 py-8 text-center text-slate-500">Tidak ada data warga sesuai filter.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = slice.map((r, idx) => {
+        const isResidentActive = r.residentActive !== false;
+        const isCounted = isResidentActive && r.kkActive;
+        const residentBadge = isResidentActive
+          ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">Aktif</span>'
+          : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">Non-Aktif</span>';
+        const kkBadge = r.kkActive
+          ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">KK Aktif</span>'
+          : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200">KK Non-Aktif</span>';
+
+        return `
+          <tr class="hover:bg-slate-50/80 ${isCounted ? '' : 'bg-rose-50/35 opacity-80'}">
+            <td class="px-3 py-2.5 text-slate-500">${startIdx + idx + 1}</td>
+            <td class="px-3 py-2.5 font-mono text-xs whitespace-nowrap">${escapeHtml(r.no_kk || '-')}</td>
+            <td class="px-3 py-2.5 whitespace-nowrap">${kkBadge}</td>
+            <td class="px-3 py-2.5 font-mono text-xs text-slate-700 whitespace-nowrap">${escapeHtml(r.nik || '-')}</td>
+            <td class="px-3 py-2.5 font-semibold ${isResidentActive ? 'text-slate-900' : 'text-slate-500 line-through'}">${escapeHtml(r.nama || '-')}</td>
+            <td class="px-3 py-2.5 whitespace-nowrap">${residentBadge}</td>
+            <td class="px-3 py-2.5 text-xs font-bold whitespace-nowrap ${r.jk === 'LAKI-LAKI' ? 'text-sky-700' : 'text-rose-700'}">${escapeHtml(r.jk)}</td>
+            <td class="px-3 py-2.5 text-right font-semibold">${escapeHtml(r.umur)}</td>
+            <td class="px-3 py-2.5 text-center">${formatYesNoBadge(r.umkm)}</td>
+            <td class="px-3 py-2.5 text-center">${formatYesNoBadge(r.disabilitas)}</td>
+            <td class="px-3 py-2.5 text-center">${formatYesNoBadge(r.anak_yatim)}</td>
+            <td class="px-3 py-2.5 text-xs text-slate-600">${escapeHtml(r.alamat || '-')}</td>
+            <td class="px-3 py-2.5 text-right whitespace-nowrap">
+              <div class="inline-flex items-center gap-1.5">
+                <button type="button" onclick="toggleResidentActiveStatus('${escapeHtml(r.nameKey)}')" class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer ${
+                  isResidentActive ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200'
+                }">${isResidentActive ? 'Non-Aktifkan Warga' : 'Aktifkan Warga'}</button>
+                ${r.no_kk ? `<button type="button" onclick="toggleKkActiveStatus('${escapeHtml(r.no_kk)}')" class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer ${
+                  r.kkActive ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+                }">${r.kkActive ? 'Non-Aktifkan KK' : 'Aktifkan KK'}</button>` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderMatrixPinState() {
+      const badgeEl = document.getElementById('matrixLockStatusBadge');
+      const lockCardEl = document.getElementById('residentMatrixPinLockCard');
+      const protectedEl = document.getElementById('residentMatrixProtectedContent');
+      const unlockedActionsEl = document.getElementById('matrixUnlockedHeaderActions');
+      if (!badgeEl || !lockCardEl || !protectedEl || !unlockedActionsEl) return;
+
+      if (state.matrixUnlocked) {
+        badgeEl.textContent = 'Terbuka (PIN Terverifikasi)';
+        badgeEl.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-300';
+        lockCardEl.classList.add('hidden');
+        protectedEl.classList.remove('hidden');
+        unlockedActionsEl.classList.remove('hidden');
+        unlockedActionsEl.classList.add('flex');
+        renderResidentsMatrix();
+      } else {
+        badgeEl.textContent = 'Terkunci PIN';
+        badgeEl.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300';
+        lockCardEl.classList.remove('hidden');
+        protectedEl.classList.add('hidden');
+        unlockedActionsEl.classList.add('hidden');
+        unlockedActionsEl.classList.remove('flex');
+      }
+    }
+
+    function ingestCsvText(rawText, label) {
+      if (!rawText || !String(rawText).trim()) {
+        showToast('Data CSV/spreadsheet kosong.', 'warning');
+        return;
+      }
+      try {
+        const parsedRows = parseSpreadsheetRowsSmart(rawText);
+        const cleaned = cleanResidents(
+          parsedRows,
+          state.kkStatusMap,
+          state.residentStatusMap,
+          state.umkmMetaMap
+        );
+        if (cleaned.length === 0) {
+          showToast('Tidak ditemukan baris warga valid pada data CSV/spreadsheet.', 'warning');
+          return;
+        }
+        state.residents = cleaned;
+        state.sourceLabel = label || 'DATA KEPENDUDUKAN 2006 EXCEL (Jawaban)';
+        state.currentPage = 1;
+        saveStateToStorage();
+        renderAll();
+        showToast(`Berhasil memuat ${cleaned.length} data warga.`, 'success');
+      } catch (err) {
+        console.error('Gagal mengurai CSV:', err);
+        showToast('Gagal mengurai data CSV/TSV.', 'error');
+      }
+    }
+
+    async function syncCsvFromUrl(isSilentAutoSync = false) {
+      const btn = document.getElementById('btnSyncCsvUrl');
+      const inputEl = document.getElementById('spreadsheetCsvUrl');
+      const normalizedUrl = normalizeGoogleSheetsCsvUrl(inputEl ? inputEl.value : state.csvUrl);
+      state.csvUrl = normalizedUrl;
+      if (inputEl) inputEl.value = normalizedUrl;
+      saveStateToStorage();
+
+      if (!normalizedUrl) {
+        if (!isSilentAutoSync) showToast('Masukkan URL CSV publik spreadsheet terlebih dahulu.', 'warning');
+        return;
+      }
+
+      if (btn && !isSilentAutoSync) {
+        btn.disabled = true;
+        btn.textContent = 'Menyinkronkan...';
+      }
+
+      try {
+        const resp = await fetch(normalizedUrl, { cache: 'no-store' });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const text = await resp.text();
+        const parsedRows = parseSpreadsheetRowsSmart(text);
+        const cleaned = cleanResidents(
+          parsedRows,
+          state.kkStatusMap,
+          state.residentStatusMap,
+          state.umkmMetaMap
+        );
+        if (cleaned.length > 0) {
+          state.residents = cleaned;
+          state.sourceLabel = 'DATA KEPENDUDUKAN 2006 EXCEL (Jawaban)';
+          state.currentPage = 1;
+          saveStateToStorage();
+          renderAll();
+          if (!isSilentAutoSync) {
+            showToast(`Berhasil memuat ${cleaned.length} data warga.`, 'success');
+          }
+        } else if (!isSilentAutoSync) {
+          showToast('Tidak ditemukan baris warga valid pada data CSV/spreadsheet.', 'warning');
+        }
+      } catch (err) {
+        console.error('Gagal sinkron URL CSV:', err);
+        if (!isSilentAutoSync) {
+          showToast('Gagal mengambil URL CSV langsung. Coba unggah file CSV atau tempel baris data.', 'error');
+        }
+      } finally {
+        if (btn && !isSilentAutoSync) {
+          btn.disabled = false;
+          btn.textContent = 'Sinkron URL CSV';
+        }
+      }
+    }
+
+    function exportFilteredCsv() {
+      if (!state.matrixUnlocked) {
+        showToast('Buka kunci PIN Matrik Warga terlebih dahulu.', 'warning');
+        return;
+      }
+      const rows = getFilteredResidents();
+      if (rows.length === 0) {
+        showToast('Tidak ada data warga untuk diekspor.', 'warning');
+        return;
+      }
+
+      const headers = ['NO KK', 'STATUS KK', 'NIK', 'NAMA WARGA', 'STATUS WARGA', 'JENIS KELAMIN', 'UMUR', 'ALAMAT', 'UMKM', 'PERIJINAN', 'NAMA PRODUK', 'DISABILITAS', 'ANAK YATIM'];
+      const lines = [headers.join(',')];
+      rows.forEach(r => {
+        const rowVals = [
+          r.no_kk,
+          r.kkActive ? 'AKTIF' : 'NONAKTIF',
+          r.nik,
+          r.nama,
+          r.residentActive !== false ? 'AKTIF' : 'NONAKTIF',
+          r.jk,
+          r.umur,
+          r.alamat,
+          normalizeYesNo(r.umkm),
+          r.perijinan || '',
+          r.nama_umkm || '',
+          normalizeYesNo(r.disabilitas),
+          normalizeYesNo(r.anak_yatim)
+        ].map(c => `"${String(c ?? '').replace(/"/g, '""')}"`);
+        lines.push(rowVals.join(','));
+      });
+
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'matrik-warga-rt05-rw04-jrebeng-wetan.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast(`Mengekspor ${rows.length} baris data warga ke CSV.`, 'success');
+    }
+
+    function renderAll() {
+      if (!Array.isArray(state.residents) || state.residents.length === 0) {
+        state.residents = cleanResidents(
+          REFERENCE_SPREADSHEET_SNAPSHOT,
+          state.kkStatusMap,
+          state.residentStatusMap,
+          state.umkmMetaMap
+        );
+      }
+      renderHeaderBrandingUi();
+      renderKpiSummary();
+      renderAgeRangeEditor();
+      renderAgeMatrixAndCharts();
+      renderAddressGrouping();
+      renderUmkmClassification();
+      renderMatrixPinState();
+      renderPwaStatusUi();
+    }
+
+    function bindUiEvents() {
+      // Kontrol tombol slideshow kiri & kanan
+      document.getElementById('btnPrevSlide')?.addEventListener('click', () => {
+        goToHeaderSlide(state.currentSlideIndex - 1);
+      });
+      document.getElementById('btnNextSlide')?.addEventListener('click', () => {
+        goToHeaderSlide(state.currentSlideIndex + 1);
+      });
+
+      // Salin link bagikan header (?h=...)
+      document.getElementById('btnCopyShareHeaderLink')?.addEventListener('click', () => {
+        const hasDataUrl = getActiveSlides().some(s => String(s.url || '').startsWith('data:image/'));
+        if (hasDataUrl) {
+          showToast('Foto unggahan lokal tidak masuk ke link URL. Gunakan URL foto HTTPS agar ikut terbawa di link bagikan.', 'warning');
+        }
+        const shareUrl = buildShareableHeaderUrl();
+        copyTextToClipboard(shareUrl, 'Link bagikan header (?h=...) berhasil disalin.');
+      });
+
+      // Tarik pembaruan header terbaru secara manual
+      document.getElementById('btnSyncHeaderNow')?.addEventListener('click', async () => {
+        loadStateFromStorage();
+        renderHeaderBrandingUi();
+        applyFormUrlToUi();
+        await pullFromPublicFallbackStore(true);
+      });
+
+      // Buka/tutup panel Admin Header & Slide
+      document.getElementById('btnToggleHeaderAdmin')?.addEventListener('click', () => {
+        const panel = document.getElementById('headerAdminPanel');
+        if (!panel) return;
+        panel.classList.toggle('hidden');
+        syncHeaderAdminPanelState();
+      });
+
+      // Verifikasi PIN Admin Header
+      document.getElementById('headerAdminPinForm')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const pinInput = document.getElementById('headerAdminPinInput');
+        if (!verifyPinValue(pinInput?.value || '')) {
+          showToast('PIN Admin salah. Gunakan PIN 050426 atau PIN yang telah diperbarui.', 'error');
+          pinInput?.focus();
+          return;
+        }
+        if (pinInput) pinInput.value = '';
+        state.headerAdminUnlocked = true;
+        syncHeaderAdminPanelState();
+        showToast('Mode Admin Header & Slide aktif.', 'success');
+      });
+
+      document.getElementById('btnLockHeaderAdmin')?.addEventListener('click', () => {
+        state.headerAdminUnlocked = false;
+        syncHeaderAdminPanelState();
+        showToast('Mode Admin dikunci.', 'info');
+      });
+
+      // Tambah foto slide dari URL
+      document.getElementById('btnAddSlideUrl')?.addEventListener('click', () => {
+        const urlInp = document.getElementById('adminNewSlideUrlInput');
+        const capInp = document.getElementById('adminNewSlideCaptionInput');
+        const rawUrl = String(urlInp?.value ?? '').trim();
+        if (!rawUrl) {
+          showToast('Masukkan URL gambar terlebih dahulu.', 'warning');
+          return;
+        }
+        const safeImgUrl = sanitizeHttpsUrl(rawUrl, '');
+        if (!safeImgUrl) {
+          showToast('URL gambar tidak valid.', 'warning');
+          return;
+        }
+        const caption = String(capInp?.value ?? '').trim() || `Foto Slide ${state.headerBranding.slides.length + 1}`;
+        state.headerBranding.slides.push({ url: safeImgUrl, caption });
+        state.currentSlideIndex = state.headerBranding.slides.length - 1;
+        if (urlInp) urlInp.value = '';
+        if (capInp) capInp.value = '';
+        renderHeaderSlideViewOnly();
+        renderAdminSlidesList();
+        showToast('Foto slide ditambahkan. Klik "Simpan & Terapkan Header" untuk menyimpan.', 'success');
+      });
+
+      // Unggah foto slide dari perangkat
+      document.getElementById('adminUploadSlideFiles')?.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        files.forEach((file) => {
+          if (!file.type.startsWith('image/')) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const dataUrl = String(ev.target?.result || '');
+            if (!dataUrl) return;
+            state.headerBranding.slides.push({
+              url: dataUrl,
+              caption: file.name.replace(/\.[^/.]+$/, '') || 'Foto Unggahan'
+            });
+            state.currentSlideIndex = state.headerBranding.slides.length - 1;
+            renderHeaderSlideViewOnly();
+            renderAdminSlidesList();
+          };
+          reader.readAsDataURL(file);
+        });
+        e.target.value = '';
+        showToast('Foto unggahan dimuat ke daftar slide.', 'success');
+      });
+
+      // Simpan perubahan header & slide
+      document.getElementById('btnSaveHeaderAdmin')?.addEventListener('click', async () => {
+        const nextTitle = String(document.getElementById('adminHeaderTitleInput')?.value ?? '').trim() || DEFAULT_HEADER_BRANDING.title;
+        const nextSubtitle = String(document.getElementById('adminHeaderSubtitleInput')?.value ?? '').trim() || DEFAULT_HEADER_BRANDING.subtitle;
+        const nextLinkLabel = String(document.getElementById('adminHeaderLinkLabelInput')?.value ?? '').trim() || DEFAULT_HEADER_BRANDING.linkLabel;
+        const nextLinkUrl = sanitizeHttpsUrl(document.getElementById('adminHeaderUrlInput')?.value ?? '', state.formUrl);
+
+        state.headerBranding = {
+          title: nextTitle,
+          subtitle: nextSubtitle,
+          linkLabel: nextLinkLabel,
+          linkUrl: nextLinkUrl,
+          slides: getActiveSlides().map(s => ({ ...s })),
+          updatedAt: Date.now()
+        };
+        state.formUrl = nextLinkUrl;
+        const hasUploadedDataUrl = state.headerBranding.slides.some(s => String(s.url || '').startsWith('data:image/'));
+        saveStateToStorage();
+        syncHeaderUrlQueryParam(hasUploadedDataUrl);
+        renderHeaderBrandingUi();
+        applyFormUrlToUi();
+
+        const syncedToCloud = await publishHeaderBrandingToAllUsers();
+        if (syncedToCloud) {
+          showToast('Perubahan tersimpan & tersinkronkan ke awan serta URL (?h=...).', 'success');
+        } else {
+          showToast('Perubahan tersimpan di browser & URL (?h=...). Gunakan "Salin Link Bagikan" untuk membuka di perangkat lain.', 'success');
+        }
+      });
+
+      // Reset header ke default
+      document.getElementById('btnResetHeaderAdmin')?.addEventListener('click', async () => {
+        state.headerBranding = {
+          ...DEFAULT_HEADER_BRANDING,
+          slides: DEFAULT_HEADER_BRANDING.slides.map(s => ({ ...s })),
+          updatedAt: Date.now()
+        };
+        state.formUrl = DEFAULT_GOOGLE_FORM_URL;
+        state.currentSlideIndex = 0;
+        saveStateToStorage();
+        syncHeaderUrlQueryParam(false);
+        syncHeaderAdminPanelState();
+        renderHeaderBrandingUi();
+        applyFormUrlToUi();
+        await publishHeaderBrandingToAllUsers();
+        showToast('Header & slideshow dikembalikan ke pengaturan default.', 'info');
+      });
+
+      // Tombol form & sinkronisasi CSV
+      document.getElementById('btnCopyFormUrl')?.addEventListener('click', () => {
+        copyTextToClipboard(sanitizeHttpsUrl(state.formUrl, DEFAULT_GOOGLE_FORM_URL), 'Link Google Form berhasil disalin.');
+      });
+
+      document.getElementById('btnSaveFormUrl')?.addEventListener('click', () => {
+        const rawInput = document.getElementById('customGoogleFormUrlInput')?.value || '';
+        const cleaned = sanitizeHttpsUrl(rawInput, '');
+        if (!cleaned) {
+          showToast('Masukkan URL Google Form yang valid.', 'warning');
+          return;
+        }
+        state.formUrl = cleaned;
+        state.headerBranding.linkUrl = cleaned;
+        saveStateToStorage();
+        applyFormUrlToUi();
+        renderHeaderBrandingUi();
+        showToast('Link Google Form tersimpan.', 'success');
+      });
+
+      document.getElementById('btnResetFormUrl')?.addEventListener('click', () => {
+        state.formUrl = DEFAULT_GOOGLE_FORM_URL;
+        state.headerBranding.linkUrl = DEFAULT_GOOGLE_FORM_URL;
+        saveStateToStorage();
+        applyFormUrlToUi();
+        renderHeaderBrandingUi();
+        showToast('Link Google Form direset ke default.', 'info');
+      });
+
+      document.getElementById('btnSyncCsvUrl')?.addEventListener('click', () => syncCsvFromUrl(false));
+      document.getElementById('spreadsheetCsvUrl')?.addEventListener('change', (e) => {
+        state.csvUrl = normalizeGoogleSheetsCsvUrl(e.target.value.trim());
+        e.target.value = state.csvUrl;
+        saveStateToStorage();
+      });
+
+      document.getElementById('btnRestoreSnapshot')?.addEventListener('click', () => {
+        state.residents = cleanResidents(
+          REFERENCE_SPREADSHEET_SNAPSHOT,
+          state.kkStatusMap,
+          state.residentStatusMap,
+          state.umkmMetaMap
+        );
+        state.sourceLabel = 'DATA KEPENDUDUKAN 2006 EXCEL (Jawaban)';
+        state.currentPage = 1;
+        saveStateToStorage();
+        renderAll();
+        showToast(`Snapshot acuan (${state.residents.length} warga) dimuat ulang.`, 'success');
+      });
+
+      document.getElementById('spreadsheetCsvFile')?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          ingestCsvText(String(ev.target?.result || ''), file.name);
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+      });
+
+      document.getElementById('btnApplyPastedCsv')?.addEventListener('click', () => {
+        const rawText = document.getElementById('spreadsheetPasteArea')?.value || '';
+        ingestCsvText(rawText, 'DATA KEPENDUDUKAN 2006 EXCEL (Jawaban)');
+      });
+
+      // Rentang umur
+      document.getElementById('btnAddAgeRange')?.addEventListener('click', addAgeRange);
+      document.getElementById('btnSaveAgeRanges')?.addEventListener('click', saveAgeRanges);
+      document.getElementById('btnResetAgeRanges')?.addEventListener('click', resetAgeRanges);
+
+      // PIN Rincian Warga per Alamat
+      document.getElementById('addressDetailPinUnlockForm')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const pinInp = document.getElementById('addressDetailPinInput');
+        if (!verifyPinValue(pinInp?.value || '')) {
+          document.getElementById('addressDetailPinErrorText')?.classList.remove('hidden');
+          showToast('PIN Rincian Warga per Alamat salah.', 'error');
+          return;
+        }
+        document.getElementById('addressDetailPinErrorText')?.classList.add('hidden');
+        if (pinInp) pinInp.value = '';
+        state.addressDetailUnlocked = true;
+        renderAddressGrouping();
+        showToast('Rincian Warga per Alamat terbuka.', 'success');
+      });
+
+      document.getElementById('btnLockAddressDetailPin')?.addEventListener('click', () => {
+        state.addressDetailUnlocked = false;
+        renderAddressGrouping();
+        showToast('Rincian Warga per Alamat dikunci.', 'info');
+      });
+
+      document.getElementById('addressDetailGroupSelect')?.addEventListener('change', (e) => {
+        state.addressDetailGroup = e.target.value;
+        state.addressFilter = e.target.value;
+        state.currentPage = 1;
+        renderAddressGrouping();
+        if (state.matrixUnlocked) renderResidentsMatrix();
+      });
+
+      // Klasifikasi UMKM
+      document.getElementById('searchUmkmInput')?.addEventListener('input', (e) => {
+        state.umkmSearchQuery = e.target.value;
+        renderUmkmClassification();
+      });
+      document.getElementById('filterUmkmPermitSelect')?.addEventListener('change', (e) => {
+        state.umkmPermitFilter = e.target.value;
+        renderUmkmClassification();
+      });
+
+      // PIN Matrik Warga & Ganti PIN
+      document.getElementById('matrixPinUnlockForm')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const pinInp = document.getElementById('matrixPinInput');
+        if (!verifyPinValue(pinInp?.value || '')) {
+          document.getElementById('matrixPinErrorText')?.classList.remove('hidden');
+          showToast('PIN Matrik Warga salah.', 'error');
+          return;
+        }
+        document.getElementById('matrixPinErrorText')?.classList.add('hidden');
+        if (pinInp) pinInp.value = '';
+        state.matrixUnlocked = true;
+        renderMatrixPinState();
+        showToast('Matrik Warga terbuka.', 'success');
+      });
+
+      document.getElementById('btnLockMatrixPin')?.addEventListener('click', () => {
+        state.matrixUnlocked = false;
+        renderMatrixPinState();
+        showToast('Matrik Warga dikunci.', 'info');
+      });
+
+      document.getElementById('btnToggleChangePinPanel')?.addEventListener('click', () => {
+        document.getElementById('changePinPanel')?.classList.toggle('hidden');
+      });
+
+      document.getElementById('btnSaveNewMatrixPin')?.addEventListener('click', () => {
+        const curVal = String(document.getElementById('currentPinForChangeInput')?.value ?? '').trim();
+        const newVal = String(document.getElementById('newPinInput')?.value ?? '').trim();
+        if (!verifyPinValue(curVal)) {
+          showToast('PIN saat ini tidak sesuai.', 'error');
+          return;
+        }
+        if (newVal.length < 4) {
+          showToast('PIN baru minimal 4 karakter/digit.', 'warning');
+          return;
+        }
+        state.matrixPin = newVal;
+        saveStateToStorage();
+        document.getElementById('currentPinForChangeInput').value = '';
+        document.getElementById('newPinInput').value = '';
+        document.getElementById('changePinPanel')?.classList.add('hidden');
+        showToast('PIN baru berhasil disimpan.', 'success');
+      });
+
+      document.getElementById('btnResetDefaultMatrixPin')?.addEventListener('click', () => {
+        state.matrixPin = DEFAULT_MATRIX_PIN;
+        saveStateToStorage();
+        document.getElementById('changePinPanel')?.classList.add('hidden');
+        showToast(`PIN direset ke default (${DEFAULT_MATRIX_PIN}).`, 'info');
+      });
+
+      // Filter & paginasi Matrik Warga
+      document.getElementById('btnActivateAllVisibleResidents')?.addEventListener('click', () => {
+        if (!state.matrixUnlocked) return;
+        const targets = getFilteredResidents().filter(r => r.residentActive === false);
+        if (targets.length === 0) {
+          showToast('Tidak ada warga Non-Aktif pada filter saat ini.', 'info');
+          return;
+        }
+        const keys = new Set(targets.map(r => r.nameKey));
+        keys.forEach(k => { state.residentStatusMap[k] = true; });
+        state.residents = state.residents.map(r => keys.has(r.nameKey) ? { ...r, residentActive: true } : r);
+        saveStateToStorage();
+        renderAll();
+        showToast(`Mengaktifkan ${keys.size} warga tersaring.`, 'success');
+      });
+
+      document.getElementById('searchResidentInput')?.addEventListener('input', (e) => {
+        state.searchQuery = e.target.value;
+        state.currentPage = 1;
+        renderResidentsMatrix();
+      });
+
+      document.getElementById('filterAddressSelect')?.addEventListener('change', (e) => {
+        state.addressFilter = e.target.value;
+        state.addressDetailGroup = e.target.value;
+        state.currentPage = 1;
+        renderAddressGrouping();
+        renderResidentsMatrix();
+      });
+
+      document.getElementById('filterResidentStatusSelect')?.addEventListener('change', (e) => {
+        state.residentStatusFilter = e.target.value;
+        state.currentPage = 1;
+        renderResidentsMatrix();
+      });
+
+      document.getElementById('filterGenderSelect')?.addEventListener('change', (e) => {
+        state.genderFilter = e.target.value;
+        state.currentPage = 1;
+        renderResidentsMatrix();
+      });
+
+      document.getElementById('filterKkStatusSelect')?.addEventListener('change', (e) => {
+        state.kkStatusFilter = e.target.value;
+        state.currentPage = 1;
+        renderResidentsMatrix();
+      });
+
+      document.getElementById('filterAgeBracketSelect')?.addEventListener('change', (e) => {
+        state.ageRangeFilter = e.target.value;
+        state.currentPage = 1;
+        renderResidentsMatrix();
+      });
+
+      document.getElementById('pageSizeSelect')?.addEventListener('change', (e) => {
+        state.pageSize = parseInt(e.target.value, 10) || 25;
+        state.currentPage = 1;
+        renderResidentsMatrix();
+      });
+
+      document.getElementById('btnPrevPage')?.addEventListener('click', () => {
+        if (state.currentPage > 1) {
+          state.currentPage -= 1;
+          renderResidentsMatrix();
+        }
+      });
+
+      document.getElementById('btnNextPage')?.addEventListener('click', () => {
+        const totalPages = Math.max(1, Math.ceil(getFilteredResidents().length / state.pageSize));
+        if (state.currentPage < totalPages) {
+          state.currentPage += 1;
+          renderResidentsMatrix();
+        }
+      });
+
+      document.getElementById('btnResetFilters')?.addEventListener('click', () => {
+        state.searchQuery = '';
+        state.addressFilter = 'ALL';
+        state.addressDetailGroup = 'ALL';
+        state.residentStatusFilter = 'ALL';
+        state.genderFilter = 'ALL';
+        state.kkStatusFilter = 'ALL';
+        state.ageRangeFilter = 'ALL';
+        state.currentPage = 1;
+        document.getElementById('searchResidentInput').value = '';
+        document.getElementById('filterAddressSelect').value = 'ALL';
+        document.getElementById('filterResidentStatusSelect').value = 'ALL';
+        document.getElementById('filterGenderSelect').value = 'ALL';
+        document.getElementById('filterKkStatusSelect').value = 'ALL';
+        document.getElementById('filterAgeBracketSelect').value = 'ALL';
+        renderAddressGrouping();
+        renderResidentsMatrix();
+        showToast('Filter direset.', 'info');
+      });
+
+      document.getElementById('btnExportCsv')?.addEventListener('click', exportFilteredCsv);
+
+      // Modal PWA
+      const modal = document.getElementById('installGuideModal');
+      const openGuide = () => {
+        renderPwaStatusUi();
+        modal?.classList.remove('hidden');
+        modal?.classList.add('flex');
+      };
+      const closeGuide = () => {
+        modal?.classList.add('hidden');
+        modal?.classList.remove('flex');
+      };
+      const triggerNative = async () => {
+        if (!deferredInstallPrompt) {
+          openGuide();
+          return;
+        }
+        try {
+          deferredInstallPrompt.prompt();
+          await deferredInstallPrompt.userChoice;
+        } finally {
+          deferredInstallPrompt = null;
+          renderPwaStatusUi();
+        }
+      };
+
+      document.getElementById('btnOpenInstallGuide')?.addEventListener('click', () => {
+        if (deferredInstallPrompt && !detectStandaloneMode()) triggerNative();
+        else openGuide();
+      });
+      document.getElementById('btnBannerInstallGuide')?.addEventListener('click', openGuide);
+      document.getElementById('btnTriggerNativeInstall')?.addEventListener('click', triggerNative);
+      document.getElementById('btnModalNativeInstall')?.addEventListener('click', triggerNative);
+      document.getElementById('btnCloseInstallGuide')?.addEventListener('click', closeGuide);
+      modal?.addEventListener('click', (e) => {
+        if (e.target === modal) closeGuide();
+      });
+
+      // Sinkronisasi otomatis saat tab/link dibuka atau difokuskan kembali
+      window.addEventListener('storage', (e) => {
+        if (Object.values(STORAGE_KEYS).includes(e.key)) {
+          loadStateFromStorage();
+          renderAll();
+        }
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          loadStateFromStorage();
+          renderAll();
+          syncCsvFromUrl(true);
+          if (cloudSyncState.mode === 'public-kv') {
+            pullFromPublicFallbackStore(false);
+          }
+        }
+      });
+    }
+
+    window.goToHeaderSlide = goToHeaderSlide;
+    window.removeHeaderSlideAt = removeHeaderSlideAt;
+    window.removeAgeRange = removeAgeRange;
+    window.filterByAddressGroup = filterByAddressGroup;
+    window.startEditUmkm = startEditUmkm;
+    window.cancelEditUmkm = cancelEditUmkm;
+    window.saveEditUmkm = saveEditUmkm;
+    window.toggleResidentActiveStatus = toggleResidentActiveStatus;
+    window.toggleKkActiveStatus = toggleKkActiveStatus;
+
+    function bootApplication() {
+      loadStateFromStorage();
+      initPwaLifecycle();
+      bindUiEvents();
+      renderAll();
+      startSlideshowTimer();
+      syncCsvFromUrl(true);
+      initRealtimeMultiUserSync();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootApplication);
+    } else {
+      bootApplication();
+    }
+
+    window.addEventListener('load', () => {
+      if (!Array.isArray(state.residents) || state.residents.length === 0) {
+        bootApplication();
+      } else {
+        renderAgeMatrixAndCharts();
+        renderAddressGrouping();
+      }
+    });
+  </script>
+</body>
+</html>
